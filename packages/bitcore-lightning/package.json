@@ -1,0 +1,21 @@
+{
+  "name": "bitcore-lightning",
+  "version": "8.25.27",
+  "description": "A monitoring tool for Bitcoin Lightning",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kenny Joseph",
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.19.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "crypto-rpc": "ssh+git://git@github.com:bitpay/crypto-rpc.git#31396ca774db5a917d45ed88b748293098009acf",
+    "express": "^4.17.3",
+    "mongodb": "~4.4.1"
+  }
+}
