@@ -5,5 +5,5 @@ export function btcToSats(btc) {
 }
 
 export function satsToBtc(sats) {
-  return BitInt(sats) / ONE_BTC;
+  return BigInt(sats) / ONE_BTC;
 }
