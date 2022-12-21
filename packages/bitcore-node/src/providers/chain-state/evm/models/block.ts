@@ -137,7 +137,7 @@ export class EVMBlockModel extends BaseBlock<IEVMBlock> {
     if (!localTip || localTip.height === 0) {
       return false;
     }
-    if (block) {
+    if (block && Number(prevHash) !== 0) {
       const prevBlock = await this.collection.findOne({ chain, network, hash: prevHash });
       if (prevBlock) {
         localTip = prevBlock;
