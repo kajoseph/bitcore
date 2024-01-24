@@ -32,6 +32,8 @@ export type IBtcTransaction = ITransaction & {
   inputCount: number;
   outputCount: number;
   size: number;
+  vsize?: number;
+  weight?: number;
 };
 
 export type TaggedBitcoinTx = BitcoinTransaction & { wallets: Array<ObjectID> };
@@ -94,6 +96,8 @@ export interface TxOp {
         coinbase: boolean;
         fee: number;
         size: number;
+        vsize?: number;
+        weight?: number;
         locktime: number;
         inputCount: number;
         outputCount: number;
@@ -358,6 +362,7 @@ export class TransactionModel extends BaseTransaction<IBtcTransaction> {
             logger.debug('Negative fee %o %o %o', txid, groupedSpends[txid], tx.outputAmount);
           }
         }
+        console.log(tx.size, tx.vsize, tx.weight);
 
         txBatch.push({
           updateOne: {
@@ -372,7 +377,9 @@ export class TransactionModel extends BaseTransaction<IBtcTransaction> {
                 blockTimeNormalized,
                 coinbase: tx.isCoinbase(),
                 fee,
-                size: tx.toBuffer().length,
+                size: tx.size,
+                vsize: tx.vsize,
+                weight: tx.weight,
                 locktime: tx.nLockTime,
                 inputCount: tx.inputs.length,
                 outputCount: tx.outputs.length,
@@ -743,6 +750,12 @@ export class TransactionModel extends BaseTransaction<IBtcTransaction> {
     };
     if (tx.blockHeight === SpentHeightIndicators.conflicting) {
       transaction.replacedByTxid = tx.replacedByTxid || ''
+    }
+    if (tx.vsize) {
+      transaction.vsize = tx.vsize;
+    }
+    if (tx.weight) {
+      transaction.weight = tx.weight;
     }
     if (options && options.object) {
       return transaction;

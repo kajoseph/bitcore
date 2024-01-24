@@ -10,6 +10,8 @@ export interface TransactionJSON {
   coinbase: boolean;
   fee: number;
   size: number;
+  vsize?: number;
+  weight?: number;
   locktime: number;
   inputCount: number;
   outputCount: number;
