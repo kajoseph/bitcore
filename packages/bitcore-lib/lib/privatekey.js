@@ -34,7 +34,7 @@ var $ = require('./util/preconditions');
  * @returns {PrivateKey} A new valid instance of an PrivateKey
  * @constructor
  */
-function PrivateKey(data, network) {
+function PrivateKey(data, network, curve) {
   /* jshint maxstatements: 20 */
   /* jshint maxcomplexity: 8 */
 
@@ -61,7 +61,8 @@ function PrivateKey(data, network) {
   JSUtil.defineImmutable(this, {
     bn: info.bn,
     compressed: info.compressed,
-    network: info.network
+    network: info.network,
+    curve: curve || info.curve || 'secp256k1'
   });
 
   Object.defineProperty(this, 'publicKey', {
@@ -221,7 +222,8 @@ PrivateKey._transformObject = function(json) {
   return {
     bn: bn,
     network: network,
-    compressed: json.compressed
+    compressed: json.compressed,
+    curve: json.curve
   };
 };
 

@@ -2,7 +2,6 @@
 
 
 var assert = require('assert');
-var buffer = require('buffer');
 var _ = require('lodash');
 var $ = require('./util/preconditions');
 
@@ -24,11 +23,17 @@ var MINIMUM_ENTROPY_BITS = 128;
 var BITS_TO_BYTES = 1 / 8;
 var MAXIMUM_ENTROPY_BITS = 512;
 
+const CURVES = [
+  'secp256k1',
+  'ed25519',
+  // 'p256',
+];
 
 /**
  * Represents an instance of an hierarchically derived private key.
  *
  * More info on https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+ * This is also SLIP-10 compliant: https://github.com/satoshilabs/slips/blob/master/slip-0010.md
  *
  * @constructor
  * @param {string|Buffer|Object} arg
@@ -254,13 +259,16 @@ HDPrivateKey.prototype._deriveWithNumber = function(index, hardened, nonComplian
   });
   var chainCode = hash.slice(32, 64);
 
-  var privateKey = leftPart.add(this.privateKey.toBigNumber()).umod(Point.getN()).toBuffer({
-    size: 32
-  });
+  let privateKey;
+  if (this.curve === 'ed25519') {
+    privateKey = leftPart.toBuffer({ size: 32 });
+  } else {
+    privateKey = leftPart.add(this.privateKey.toBigNumber()).umod(Point.getN()).toBuffer({ size: 32 });
 
-  if (!PrivateKey.isValid(privateKey)) {
-    // Index at this point is already hardened, we can pass null as the hardened arg
-    return this._deriveWithNumber(index + 1, null, nonCompliant);
+    if (!PrivateKey.isValid(privateKey)) {
+      // Index at this point is already hardened, we can pass null as the hardened arg
+      return this._deriveWithNumber(index + 1, null, nonCompliant);
+    }
   }
 
   var derived = new HDPrivateKey({
@@ -269,7 +277,8 @@ HDPrivateKey.prototype._deriveWithNumber = function(index, hardened, nonComplian
     parentFingerPrint: this.fingerPrint,
     childIndex: index,
     chainCode: chainCode,
-    privateKey: privateKey
+    privateKey: privateKey,
+    curve: this.curve
   });
 
   return derived;
@@ -371,7 +380,8 @@ HDPrivateKey.prototype._buildFromObject = function(arg) {
     childIndex: _.isNumber(arg.childIndex) ? BufferUtil.integerAsBuffer(arg.childIndex) : arg.childIndex,
     chainCode: _.isString(arg.chainCode) ? Buffer.from(arg.chainCode,'hex') : arg.chainCode,
     privateKey: (_.isString(arg.privateKey) && JSUtil.isHexa(arg.privateKey)) ? Buffer.from(arg.privateKey,'hex') : arg.privateKey,
-    checksum: arg.checksum ? (arg.checksum.length ? arg.checksum : BufferUtil.integerAsBuffer(arg.checksum)) : undefined
+    checksum: arg.checksum ? (arg.checksum.length ? arg.checksum : BufferUtil.integerAsBuffer(arg.checksum)) : undefined,
+    curve: arg.curve ? Buffer.from(arg.curve) : undefined
   };
   return this._buildFromBuffers(buffers);
 };
@@ -401,9 +411,10 @@ HDPrivateKey.prototype._generateRandomly = function(network) {
  *
  * @param {string|Buffer} hexa
  * @param {*} network
+ * @param {string} curve
  * @return HDPrivateKey
  */
-HDPrivateKey.fromSeed = function(hexa, network) {
+HDPrivateKey.fromSeed = function(hexa, network, curve) {
   /* jshint maxcomplexity: 8 */
   if (JSUtil.isHexaString(hexa)) {
     hexa = Buffer.from(hexa, 'hex');
@@ -417,7 +428,23 @@ HDPrivateKey.fromSeed = function(hexa, network) {
   if (hexa.length > MAXIMUM_ENTROPY_BITS * BITS_TO_BYTES) {
     throw new hdErrors.InvalidEntropyArgument.TooMuchEntropy(hexa);
   }
-  var hash = Hash.sha512hmac(hexa, Buffer.from('Bitcoin seed'));
+
+  curve = HDPrivateKey._normalizeCurveParam(curve);
+
+  let curveKey;
+  switch (curve) {
+    case 'secp256k1':
+    default:
+      curveKey = 'Bitcoin seed';
+      break;
+    case 'ed25519':
+      curveKey = 'ed25519 seed';
+      break;
+    case 'p256':
+      curveKey = 'Nist256p1 seed';
+      break;
+  }
+  var hash = Hash.sha512hmac(hexa, Buffer.from(curveKey));
 
   return new HDPrivateKey({
     network: Network.get(network) || Network.defaultNetwork,
@@ -425,7 +452,8 @@ HDPrivateKey.fromSeed = function(hexa, network) {
     parentFingerPrint: 0,
     childIndex: 0,
     privateKey: hash.slice(0, 32),
-    chainCode: hash.slice(32, 64)
+    chainCode: hash.slice(32, 64),
+    curve
   });
 };
 
@@ -443,13 +471,13 @@ HDPrivateKey.prototype._calcHDPublicKey = function() {
  * internal structure
  *
  * @param {Object} arg
- * @param {buffer.Buffer} arg.version
- * @param {buffer.Buffer} arg.depth
- * @param {buffer.Buffer} arg.parentFingerPrint
- * @param {buffer.Buffer} arg.childIndex
- * @param {buffer.Buffer} arg.chainCode
- * @param {buffer.Buffer} arg.privateKey
- * @param {buffer.Buffer} arg.checksum
+ * @param {Buffer} arg.version
+ * @param {Buffer} arg.depth
+ * @param {Buffer} arg.parentFingerPrint
+ * @param {Buffer} arg.childIndex
+ * @param {Buffer} arg.chainCode
+ * @param {Buffer} arg.privateKey
+ * @param {Buffer} arg.checksum
  * @param {string=} arg.xprivkey - if set, don't recalculate the base58
  *      representation
  * @return {HDPrivateKey} this
@@ -468,7 +496,7 @@ HDPrivateKey.prototype._buildFromBuffers = function(arg) {
     arg.version, arg.depth, arg.parentFingerPrint, arg.childIndex, arg.chainCode,
     BufferUtil.emptyBuffer(1), arg.privateKey
   ];
-  var concat = buffer.Buffer.concat(sequence);
+  var concat = Buffer.concat(sequence);
   if (!arg.checksum || !arg.checksum.length) {
     arg.checksum = Base58Check.checksum(concat);
   } else {
@@ -479,10 +507,11 @@ HDPrivateKey.prototype._buildFromBuffers = function(arg) {
 
   var network = Network.get(BufferUtil.integerFromBuffer(arg.version));
   var xprivkey;
-  xprivkey = Base58Check.encode(buffer.Buffer.concat(sequence));
+  xprivkey = Base58Check.encode(Buffer.concat(sequence));
   arg.xprivkey = Buffer.from(xprivkey);
 
-  var privateKey = new PrivateKey(BN.fromBuffer(arg.privateKey), network);
+  var curve = arg.curve ? HDPrivateKey._normalizeCurveParam(arg.curve.toString()) : 'secp256k1';
+  var privateKey = new PrivateKey(BN.fromBuffer(arg.privateKey), network, curve);
   var publicKey = privateKey.toPublicKey();
   var size = HDPrivateKey.ParentFingerPrintSize;
   var fingerPrint = Hash.sha256ripemd160(publicKey.toBuffer()).slice(0, size);
@@ -493,7 +522,8 @@ HDPrivateKey.prototype._buildFromBuffers = function(arg) {
     depth: BufferUtil.integerFromSingleByteBuffer(arg.depth),
     privateKey: privateKey,
     publicKey: publicKey,
-    fingerPrint: fingerPrint
+    fingerPrint: fingerPrint,
+    curve: curve
   });
 
   this._hdPublicKey = null;
@@ -513,6 +543,10 @@ HDPrivateKey.prototype._buildFromBuffers = function(arg) {
       this._calcHDPublicKey();
       return this._hdPublicKey.xpubkey;
     }
+  });
+  Object.defineProperty(this, 'curve', {
+    configurable: false,
+    value: curve
   });
   return this;
 };
@@ -605,6 +639,12 @@ HDPrivateKey.fromBuffer = function(arg) {
  */
 HDPrivateKey.prototype.toBuffer = function() {
   return BufferUtil.copy(this._buffers.xprivkey);
+};
+
+HDPrivateKey._normalizeCurveParam = function(curve) {
+  curve = curve ? curve.toString().toLowerCase() : 'secp256k1';
+  $.checkArgument(CURVES.includes(curve), 'Invalid curve. Must be one of ' + CURVES.join(', '));
+  return curve;
 };
 
 HDPrivateKey.DefaultDepth = 0;

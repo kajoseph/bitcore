@@ -203,12 +203,13 @@ Mnemonic.fromSeed = function(seed, wordlist) {
  * Optionally receive a passphrase and bitcoin network.
  *
  * @param {String=} [passphrase]
- * @param {Network|String|number=} [network] - The network: 'livenet' or 'testnet'
+ * @param {Network|String|number=} [network] - The network: 'livenet' (default) or 'testnet'
+ * @param {String=} [curve] - The curve used: 'secp256k1' (default), 'ed25519', 'nist256p1'
  * @returns {HDPrivateKey}
  */
-Mnemonic.prototype.toHDPrivateKey = function(passphrase, network) {
+Mnemonic.prototype.toHDPrivateKey = function(passphrase, network, curve) {
   var seed = this.toSeed(passphrase);
-  return bitcore.HDPrivateKey.fromSeed(seed, network);
+  return bitcore.HDPrivateKey.fromSeed(seed, network, curve || this.curve);
 };
 
 /**

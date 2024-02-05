@@ -20,9 +20,14 @@ var ecPointFromX = ec.curve.pointFromX.bind(ec.curve);
  * @returns {Point} An instance of Point
  * @constructor
  */
-var Point = function Point(x, y, isRed) {
+var Point = function Point(x, y, isRed, curve) {
+  let point
   try {
-    var point = ecPoint(x, y, isRed);
+    if (curve) {
+      point = curve.point.call(curve, x, y, isRed);
+    } else {
+      point = ecPoint(x, y, isRed);
+    }
   } catch (e) {
     throw new Error('Invalid Point');
   }
@@ -58,7 +63,10 @@ Point.fromX = function fromX(odd, x){
  * @link https://en.bitcoin.it/wiki/Secp256k1
  * @returns {Point} An instance of the base point.
  */
-Point.getG = function getG() {
+Point.getG = function getG(curve) {
+  if (curve && curve !== 'secp256k1') {
+    return new EC(curve).curve.g;
+  }
   return ec.curve.g;
 };
 

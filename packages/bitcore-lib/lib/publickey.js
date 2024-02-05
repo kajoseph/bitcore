@@ -125,7 +125,7 @@ PublicKey._isBuffer = function(param) {
 PublicKey._transformPrivateKey = function(privkey) {
   $.checkArgument(PublicKey._isPrivateKey(privkey), 'Must be an instance of PrivateKey');
   var info = {};
-  info.point = Point.getG().mul(privkey.bn);
+  info.point = Point.getG(privkey.curve).mul(privkey.bn);
   info.compressed = privkey.compressed;
   info.network = privkey.network;
   return info;
@@ -203,7 +203,7 @@ PublicKey._transformX = function(odd, x) {
 PublicKey._transformObject = function(json) {
   var x = new BN(json.x, 'hex');
   var y = new BN(json.y, 'hex');
-  var point = new Point(x, y);
+  var point = new Point(x, y, null, json.curve);
   return new PublicKey(point, {
     compressed: json.compressed
   });

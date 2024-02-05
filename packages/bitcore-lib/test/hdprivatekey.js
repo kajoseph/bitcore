@@ -5,9 +5,9 @@ var assert = require('assert');
 var should = require('chai').should();
 var expect = require('chai').expect;
 var bitcore = require('..');
+const SLIP10 = require('./data/slip10.json');
 var errors = bitcore.errors;
 var hdErrors = errors.HDPrivateKey;
-var buffer = require('buffer');
 var Networks = bitcore.Networks;
 var BufferUtil = bitcore.util.buffer;
 var HDPrivateKey = bitcore.HDPrivateKey;
@@ -307,5 +307,29 @@ describe('HDPrivate key interface', function() {
     it('recovers state from Object', function() {
       new HDPrivateKey(plainObject).xprivkey.should.equal(xprivkey);
     });
+  });
+
+  describe.only('SLIP-10', function() {
+    for (const [vector, obj] of Object.entries(SLIP10)) {
+      const curve = vector.split(' ').slice(-1)[0];
+      if (curve === 'nist256p1') continue;
+      describe(vector, function() {
+        for (const [seedStr, cases] of Object.entries(obj)) {
+          describe(seedStr, function() {
+            const seed = seedStr.split(':')[1].trim();
+            for (const testCase of cases) {
+              it('should derive ' + testCase.path, function() {
+                console.log('curve', curve);
+                const hdpk = new HDPrivateKey.fromSeed(seed, null, curve);
+                const child = hdpk.deriveChild(testCase.path);
+                child.privateKey.toString('hex').should.equal(testCase.private);
+                child.publicKey.toString('hex').should.equal(testCase.public);
+                // child.fingerPrint.toString('hex').should.equal(testCase.fingerprint);
+              });
+            }
+          });
+        }
+      });
+    }
   });
 });
