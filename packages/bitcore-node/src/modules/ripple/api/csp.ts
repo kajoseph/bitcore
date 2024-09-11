@@ -269,7 +269,7 @@ export class RippleStateProvider extends InternalStateProvider implements IChain
     }
     let txs: AccountTxResponse['result'] = await client.getTransactions({ address: params.address, options });
     if (startTx) {
-      const startTxIdx = txs.transactions.findIndex(tx => tx.tx?.hash === startTx);
+      const startTxIdx = txs.transactions.findIndex(tx => tx.tx_json?.hash === startTx);
       if (startTxIdx > -1) {
         txs.transactions = txs.transactions.slice(startTxIdx + 1);
       }
@@ -374,25 +374,25 @@ export class RippleStateProvider extends InternalStateProvider implements IChain
   }
 
   transformAccountTx(tx: AccountTransaction, network: string): IXrpTransaction {
-    const date = this.getDateFromRippleTime(tx.tx?.date) || '';
+    const date = this.getDateFromRippleTime(tx.tx_json?.date) || '';
     const value = Number((tx.meta as TransactionMetadata).DeliveredAmount ?? (tx.meta as TransactionMetadata).delivered_amount ?? 0);
 
     return {
       network,
       chain: this.chain,
-      txid: tx.tx?.hash,
-      from: tx.tx?.Account,
+      txid: tx.tx_json?.hash,
+      from: tx.tx_json?.Account,
       blockHash: (tx as any).ledger_hash || '', // TODO: ledger_hash is not a property of AccountTransaction
-      blockHeight: tx.tx?.ledger_index,
+      blockHeight: tx.tx_json?.ledger_index,
       blockTime: date,
       blockTimeNormalized: date,
       value: Number(value),
-      fee: Number(tx.tx?.Fee ?? 0),
-      nonce: Number(tx.tx?.Sequence),
-      destinationTag: (tx.tx as Payment).DestinationTag,
-      to: (tx.tx as Payment).Destination,
+      fee: Number(tx.tx_json?.Fee ?? 0),
+      nonce: Number(tx.tx_json?.Sequence),
+      destinationTag: (tx.tx_json as Payment).DestinationTag,
+      to: (tx.tx_json as Payment).Destination,
       currency: undefined, // TODO
-      invoiceID: (tx.tx as CheckCreate).InvoiceID,
+      invoiceID: (tx.tx_json as CheckCreate).InvoiceID,
       wallets: []
     } as IXrpTransaction;
 
@@ -400,7 +400,7 @@ export class RippleStateProvider extends InternalStateProvider implements IChain
 
   transformToCoins(tx: BlockTransaction | AccountTransaction | RpcTransaction, network: string, block?: IBlock): Array<Partial<ICoin>> {
     const coins: Partial<ICoin>[] = [];
-    const mintTxid = (tx as BlockTransaction).hash || (tx as AccountTransaction).tx?.hash || (tx as RpcTransaction).hash;
+    const mintTxid = (tx as BlockTransaction).hash || (tx as AccountTransaction).tx_json?.hash || (tx as RpcTransaction).hash;
     const metaData = (tx as BlockTransaction).metaData || (tx as AccountTransaction).meta as TransactionMetadata || (tx as RpcTransaction).meta as TransactionMetadata;
 
     if (!metaData.AffectedNodes?.length) {
