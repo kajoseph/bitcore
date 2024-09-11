@@ -978,8 +978,9 @@ describe('History', function() {
           internal: [],
           dust: false,
           abiType: '{"type":"ERC20","name":"transfer","params":[{"name":"_to","value":"0xeca2486a6a213fb40537658d7360ab6221eb26be","type":"address"},{"name":"_tokenId","value":"3000000","type":"uint256"}]}',
+          effects: undefined,
           error: undefined,
-          network: 'testnet',
+          network: 'sepolia',
           chain: 'ETH',
           data: '0x',
           nonce: 57,
@@ -987,6 +988,9 @@ describe('History', function() {
           gasLimit: 163759,
           receipt: undefined,
           lowFees: false,
+          maxGasFee: undefined,
+          priorityGasFee: undefined,
+          txType: undefined,
         });
         done();
       });

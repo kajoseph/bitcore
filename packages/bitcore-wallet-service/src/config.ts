@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { logger } from './lib/logger';
 
-const Config = () => {
+const Config = (): any => {
   let defaultConfig = {
     basePath: '/bws/api',
     disableLogs: false,
@@ -25,7 +25,7 @@ const Config = () => {
 
     storageOpts: {
       mongoDb: {
-        uri: 'mongodb://localhost:27017/bws',
+        uri: 'mongodb://0.0.0.0:27017/bws',
         dbname: 'bws'
       }
     },
@@ -40,33 +40,44 @@ const Config = () => {
         livenet: {
           url: 'https://api.bitcore.io'
         },
-        testnet: {
-          url: 'https://api.bitcore.io',
-          regtestEnabled: false
+        testnet3: {
+          url: 'https://api.bitcore.io'
+        },
+        testnet4: {
+          url: 'https://api.bitcore.io'
         }
       },
       bch: {
         livenet: {
           url: 'https://api.bitcore.io'
         },
-        testnet: {
+        testnet3: {
+          url: 'https://api.bitcore.io'
+        },
+        testnet4: {
+          url: 'https://api.bitcore.io'
+        },
+        scalenet: {
+          url: 'https://api.bitcore.io'
+        },
+        chipnet: {
           url: 'https://api.bitcore.io'
         }
       },
-      eth: {
+      doge: {
         livenet: {
-          url: 'https://api-eth.bitcore.io'
+          url: 'https://api.bitcore.io'
         },
-        testnet: {
-          url: 'https://api-eth.bitcore.io'
+        testnet3: {
+          url: 'https://api.bitcore.io'
         }
       },
-      matic: {
+      ltc: {
         livenet: {
-          url: 'https://api-matic.bitcore.io'
+          url: 'https://api.bitcore.io'
         },
-        testnet: {
-          url: 'https://api-matic.bitcore.io'
+        testnet4: {
+          url: 'https://api.bitcore.io'
         }
       },
       xrp: {
@@ -77,20 +88,44 @@ const Config = () => {
           url: 'https://api-xrp.bitcore.io'
         }
       },
-      doge: {
+      eth: {
         livenet: {
-          url: 'https://api.bitcore.io'
+          url: 'https://api-eth.bitcore.io'
         },
-        testnet: {
-          url: 'https://api.bitcore.io'
+        sepolia: {
+          url: 'https://api-eth.bitcore.io'
         }
       },
-      ltc: {
+      matic: {
         livenet: {
-          url: 'https://api.bitcore.io'
+          url: 'https://api-matic.bitcore.io'
         },
-        testnet: {
-          url: 'https://api.bitcore.io'
+        amoy: {
+          url: 'https://api-matic.bitcore.io'
+        }
+      },
+      arb: {
+        livenet: {
+          url: 'https://api-eth.bitcore.io'
+        },
+        sepolia: {
+          url: 'https://api-eth.bitcore.io'
+        }
+      },
+      base: {
+        livenet: {
+          url: 'https://api-eth.bitcore.io'
+        },
+        sepolia: {
+          url: 'https://api-eth.bitcore.io'
+        }
+      },
+      op: {
+        livenet: {
+          url: 'https://api-eth.bitcore.io'
+        },
+        sepolia: {
+          url: 'https://api-eth.bitcore.io'
         }
       },
       socketApiKey: 'socketApiKey'
@@ -115,6 +150,10 @@ const Config = () => {
     services: {
       buyCrypto: {
         disabled: false,
+        banxa: {
+          disabled: false,
+          removed: false
+        },
         moonpay: {
           disabled: false,
           removed: false
@@ -131,44 +170,89 @@ const Config = () => {
           disabled: false,
           removed: false
         },
+        transak: {
+          disabled: false,
+          removed: false
+        },
         wyre: {
           disabled: false,
           removed: false
         }
       },
-      swapCrypto: { 
+      sellCrypto: {
         disabled: false,
-        changelly: {
+        moonpay: {
           disabled: false,
           removed: false
         }
       },
+      swapCrypto: {
+        disabled: false,
+        changelly: {
+          disabled: false,
+          removed: false
+        },
+        thorswap: {
+          disabled: false,
+          removed: false,
+          // config: {
+          //   affiliateAddress: 'thorname_here',
+          //   affiliateBasisPoints: 'type_number_fee_here'
+          // }
+        }
+      },
     },
     suspendedChains: [],
-    staticRoot: '/tmp/static'
+    staticRoot: '/tmp/static',
+    // banxa : {
+    //   sandbox: {
+    //     api: 'https://bitpay.banxa-sandbox.com/api',
+    //     apiKey: 'banxa_sandbox_api_key_here',
+    //     secretKey: 'banxa_sandbox_secret_key_here',
+    //   },
+    //   production: {
+    //     api: 'https://bitpay.banxa-sandbox.com/api',
+    //     apiKey: 'banxa_production_api_key_here',
+    //     secretKey: 'banxa_production_secret_key_here',
+    //   },
+    //   sandboxWeb: {
+    //     api: 'https://bitpay.banxa-sandbox.com/api',
+    //     apiKey: 'banxa_sandbox_web_api_key_here',
+    //     secretKey: 'banxa_sandbox_web_secret_key_here',
+    //   },
+    //   productionWeb: {
+    //     api: 'https://bitpay.banxa-sandbox.com/api',
+    //     apiKey: 'banxa_production_web_api_key_here',
+    //     secretKey: 'banxa_production_web_secret_key_here',
+    //   },
+    // },
     // moonpay: {
     //   sandbox: {
     //     apiKey: 'moonpay_sandbox_api_key_here',
     //     api: 'https://api.moonpay.com',
     //     widgetApi: 'https://buy-sandbox.moonpay.com',
+    //     sellWidgetApi: 'https://sell-sandbox.moonpay.com',
     //     secretKey: 'moonpay_sandbox_secret_key_here',
     //   },
     //   production: {
     //     apiKey: 'moonpay_production_api_key_here',
     //     api: 'https://api.moonpay.com',
     //     widgetApi: 'https://buy.moonpay.com',
+    //     sellWidgetApi: 'https://sell.moonpay.com',
     //     secretKey: 'moonpay_production_secret_key_here',
     //   },
     //   sandboxWeb: {
     //     apiKey: 'moonpay_sandbox_web_api_key_here',
     //     api: 'https://api.moonpay.com',
     //     widgetApi: 'https://buy-sandbox.moonpay.com',
+    //     sellWidgetApi: 'https://sell-sandbox.moonpay.com',
     //     secretKey: 'moonpay_sandbox_web_secret_key_here',
     //   },
     //   productionWeb: {
     //     apiKey: 'moonpay_production_web_api_key_here',
     //     api: 'https://api.moonpay.com',
     //     widgetApi: 'https://buy.moonpay.com',
+    //     sellWidgetApi: 'https://sell.moonpay.com',
     //     secretKey: 'moonpay_production_web_secret_key_here',
     //   }
     // },
@@ -180,8 +264,8 @@ const Config = () => {
     //   },
     //   production: {
     //     apiKey: 'ramp_production_api_key_here',
-    //     api: 'https://api-instant.ramp.network/api',
-    //     widgetApi: 'https://buy.ramp.network',
+    //     api: 'https://api.ramp.network/api',
+    //     widgetApi: 'https://app.ramp.network',
     //   },
     //   sandboxWeb: {
     //     apiKey: 'ramp_sandbox_web_api_key_here',
@@ -190,8 +274,8 @@ const Config = () => {
     //   },
     //   productionWeb: {
     //     apiKey: 'ramp_production_web_api_key_here',
-    //     api: 'https://api-instant.ramp.network/api',
-    //     widgetApi: 'https://buy.ramp.network',
+    //     api: 'https://api.ramp.network/api',
+    //     widgetApi: 'https://app.ramp.network',
     //   }
     // },
     // sardine: {
@@ -238,6 +322,46 @@ const Config = () => {
     //     appProviderId: 'simplex_web_provider_id_here'
     //   }
     // },
+    // thorswap : {
+    //   sandbox: {
+    //     api: 'https://dev-api.thorswap.net',
+    //     apiKey: 'thorswap_sandbox_api_key_here',
+    //     secretKey: 'thorswap_sandbox_secret_key_here',
+    //     referer: 'thorswap_sandbox_referer_here'
+    //   },
+    //   production: {
+    //     api: 'https://api.thorswap.net',
+    //     apiKey: 'thorswap_production_api_key_here',
+    //     secretKey: 'thorswap_production_secret_key_here',
+    //     referer: 'thorswap_production_referer_here'
+    //   },
+    // },
+    // transak : {
+    //   sandbox: {
+    //     api: 'https://api-stg.transak.com',
+    //     widgetApi: 'https://global-stg.transak.com',
+    //     apiKey: 'transak_sandbox_api_key_here',
+    //     secretKey: 'transak_sandbox_secret_key_here',
+    //   },
+    //   production: {
+    //     api: 'https://api.transak.com',
+    //     widgetApi: 'https://global.transak.com',
+    //     apiKey: 'transak_production_api_key_here',
+    //     secretKey: 'transak_production_secret_key_here',
+    //   },
+    //   sandboxWeb: {
+    //     api: 'https://api-stg.transak.com',
+    //     widgetApi: 'https://global-stg.transak.com',
+    //     apiKey: 'transak_sandbox_web_api_key_here',
+    //     secretKey: 'transak_sandbox_web_secret_key_here',
+    //   },
+    //   productionWeb: {
+    //     api: 'https://api.transak.com',
+    //     widgetApi: 'https://global.transak.com',
+    //     apiKey: 'transak_production_web_api_key_here',
+    //     secretKey: 'transak_production_web_secret_key_here',
+    //   }
+    // },
     // wyre: {
     //   sandbox: {
     //     apiKey: 'wyre_sandbox_api_key_here',
@@ -266,9 +390,17 @@ const Config = () => {
     //   }
     // },
     // oneInch: {
-    //   api: 'https://bitpay.api.enterprise.1inch.exchange',
+    //   api: 'https://api.1inch.dev/swap',
+    //   apiKey: 'one_inch_api_key',
     //   referrerAddress: 'one_inch_referrer_address', // ETH
     //   referrerFee: 'one_inch_referrer_fee', // min: 0; max: 3; (represents percentage)
+    // },
+    // coinGecko: {
+    //   api: 'https://api.coingecko.com/api',
+    // },
+    // moralis: {
+    //   apiKey: 'moralis_api_key_here',
+    //   whitelist: []
     // },
     // To use email notifications uncomment this:
     // emailOpts: {
@@ -277,6 +409,7 @@ const Config = () => {
     //  ignoreTLS: true,
     //  subjectPrefix: '[Wallet Service]',
     //  from: 'wallet-service@bitcore.io',
+    //  // Note: Prod templates are in a the copay-emails repo (https://github.com/bitpay/copay-emails)
     //  templatePath: 'templates',
     //  defaultLanguage: 'en',
     //  defaultUnit: 'btc',
@@ -326,4 +459,4 @@ const Config = () => {
   return defaultConfig;
 };
 
-module.exports = Config();
+export default Config();

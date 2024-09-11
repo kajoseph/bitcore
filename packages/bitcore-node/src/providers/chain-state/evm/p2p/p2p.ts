@@ -7,12 +7,11 @@ import logger from '../../../../logger';
 import { StateStorage } from '../../../../models/state';
 import { BaseP2PWorker } from '../../../../services/p2p';
 import { IEVMNetworkConfig } from '../../../../types/Config';
-import { valueOrDefault } from '../../../../utils/check';
-import { wait } from '../../../../utils/wait';
+import { wait } from '../../../../utils';
 import { BaseEVMStateProvider } from '../api/csp';
 import { EVMBlockModel, EVMBlockStorage } from '../models/block';
 import { EVMTransactionModel, EVMTransactionStorage } from '../models/transaction';
-import { AnyBlock, ErigonTransaction, GethTransaction, IEVMBlock, IEVMTransaction } from '../types';
+import { AnyBlock, ErigonTransaction, GethTransaction, IEVMBlock, IEVMTransactionInProcess } from '../types';
 import { IRpc, Rpcs } from './rpcs';
 import { MultiThreadSync } from './sync';
 
@@ -192,7 +191,7 @@ export class EVMP2pWorker extends BaseP2PWorker<IEVMBlock> {
     return this.rpc!.getBlock(height);
   }
 
-  async processBlock(block: IEVMBlock, transactions: IEVMTransaction[]): Promise<any> {
+  async processBlock(block: IEVMBlock, transactions: IEVMTransactionInProcess[]): Promise<any> {
     await this.blockModel.addBlock({
       chain: this.chain,
       network: this.network,
@@ -212,7 +211,7 @@ export class EVMP2pWorker extends BaseP2PWorker<IEVMBlock> {
 
   async processTransaction(tx: ErigonTransaction | GethTransaction) {
     const now = new Date();
-    const convertedTx = this.convertTx(tx);
+    const convertedTx = this.txModel.convertRawTx(this.chain, this.network, tx);
     this.txModel.batchImport({
       chain: this.chain,
       network: this.network,
@@ -352,61 +351,11 @@ export class EVMP2pWorker extends BaseP2PWorker<IEVMBlock> {
       gasUsed: block.gasUsed,
       stateRoot: Buffer.from(block.stateRoot)
     };
-    const transactions = block.transactions as Array<ErigonTransaction | GethTransaction>;
-    const convertedTxs = transactions.map(t => this.convertTx(t, convertedBlock));
+    const convertedTxs = block.transactions.map(t => this.txModel.convertRawTx(this.chain, this.network, t, convertedBlock));
     const traceTxs = await this.rpc!.getTransactionsFromBlock(convertedBlock.height);
-
     this.rpc!.reconcileTraces(convertedBlock, convertedTxs, traceTxs);
-
+    this.txModel.addEffectsToTxs(convertedTxs);
     return { convertedBlock, convertedTxs };
-  }
-
-  convertTx(tx: Partial<ErigonTransaction | GethTransaction>, block?: IEVMBlock): IEVMTransaction {
-    if (!block) {
-      const txid = tx.hash || '';
-      const to = tx.to || '';
-      const from = tx.from || '';
-      const value = Number(tx.value);
-      const fee = Number(tx.gas) * Number(tx.gasPrice);
-      const abiType = this.txModel.abiDecode(tx.input!);
-      const nonce = tx.nonce || 0;
-      const convertedTx: IEVMTransaction = {
-        chain: this.chain,
-        network: this.network,
-        blockHeight: valueOrDefault(tx.blockNumber, -1),
-        blockHash: valueOrDefault(tx.blockHash, undefined),
-        data: Buffer.from(tx.input || '0x'),
-        txid,
-        blockTime: new Date(),
-        blockTimeNormalized: new Date(),
-        fee,
-        transactionIndex: tx.transactionIndex || 0,
-        value,
-        wallets: [],
-        to,
-        from,
-        gasLimit: Number(tx.gas),
-        gasPrice: Number(tx.gasPrice),
-        // gasUsed: Number(tx.gasUsed),
-        nonce,
-        internal: [],
-        calls: []
-      };
-      if (abiType) {
-        convertedTx.abiType = abiType;
-      }
-      return convertedTx;
-    } else {
-      const { hash: blockHash, time: blockTime, timeNormalized: blockTimeNormalized, height } = block;
-      const noBlockTx = this.convertTx(tx);
-      return {
-        ...noBlockTx,
-        blockHeight: height,
-        blockHash,
-        blockTime,
-        blockTimeNormalized
-      };
-    }
   }
 
   async stop() {

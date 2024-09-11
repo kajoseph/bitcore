@@ -3,14 +3,14 @@ import { expect } from 'chai';
 import { Request, Response } from 'express-serve-static-core';
 import _ from 'lodash';
 import * as sinon from 'sinon';
-import { Transform } from 'stream';
+import { Transform, Writable } from 'stream';
 import Web3 from 'web3';
 import { MongoBound } from '../../../src/models/base';
 import { CacheStorage } from '../../../src/models/cache';
 import { IWallet, WalletStorage } from '../../../src/models/wallet';
 import { WalletAddressStorage } from '../../../src/models/walletAddress';
 import { MATIC } from '../../../src/modules/matic/api/csp';
-import { IEVMTransaction } from '../../../src/providers/chain-state/evm//types';
+import { IEVMTransactionInProcess } from '../../../src/providers/chain-state/evm//types';
 import { EVMBlockStorage } from '../../../src/providers/chain-state/evm/models/block';
 import { EVMTransactionStorage } from '../../../src/providers/chain-state/evm/models/transaction';
 import { StreamWalletTransactionsParams } from '../../../src/types/namespaces/ChainStateProvider';
@@ -98,7 +98,7 @@ describe('Polygon/MATIC API', function() {
         network,
         blockHeight: 1,
         gasPrice: 10 * 1e9
-      } as IEVMTransaction;
+      } as IEVMTransactionInProcess;
     });
     await CacheStorage.collection.remove({});
     await EVMTransactionStorage.collection.deleteMany({});
@@ -119,7 +119,7 @@ describe('Polygon/MATIC API', function() {
         network,
         blockHeight: 1,
         gasPrice: 10 * 1e9
-      } as IEVMTransaction;
+      } as IEVMTransactionInProcess;
     });
     await CacheStorage.collection.remove({})
     await EVMTransactionStorage.collection.deleteMany({});
@@ -174,7 +174,7 @@ describe('Polygon/MATIC API', function() {
         gasPrice: 10 * 1e9,
         data: Buffer.from(''),
         from: address
-      } as IEVMTransaction;
+      } as IEVMTransactionInProcess;
     });
     await EVMTransactionStorage.collection.deleteMany({});
     await EVMTransactionStorage.collection.insertMany(txs);
@@ -211,7 +211,7 @@ describe('Polygon/MATIC API', function() {
         blockHeight: 1,
         gasPrice: 10 * 1e9,
         data: Buffer.from('')
-      } as IEVMTransaction;
+      } as IEVMTransactionInProcess;
     });
     await EVMTransactionStorage.collection.deleteMany({});
     await EVMTransactionStorage.collection.insertMany(txs);
@@ -256,7 +256,7 @@ describe('Polygon/MATIC API', function() {
         blockHash: '12345',
         gasPrice: 10 * 1e9,
         data: Buffer.from('')
-      } as IEVMTransaction;
+      } as IEVMTransactionInProcess;
     });
     await EVMTransactionStorage.collection.deleteMany({});
     await EVMTransactionStorage.collection.insertMany(txs);
@@ -359,45 +359,63 @@ const streamWalletTransactionsTest = async (chain: string, network: string, incl
       gasPrice: 10 * 1e9,
       data: Buffer.from(''),
       from: address
-    } as IEVMTransaction;
+    } as IEVMTransactionInProcess;
   });
   // Invalid Transactions
-  _.times(txCount, () => txs.push({
-    ...txs[0],
-    blockHeight: -3
-  }))
+  for (let i = 0; i < txCount; i++) {
+    txs.push({
+      ...txs[0],
+      blockHeight: -3
+    })
+  }
   // Add wallet object ID to transactions
-  txs.forEach(tx => tx.wallets = [objectId]);
+  for (const tx of txs) {
+    tx.wallets = [objectId];
+  }
 
   // Stubs
   sandbox.stub(MATIC, 'getWalletAddresses').resolves([address]);
+  sandbox.stub(MATIC, 'isP2p').returns(true);
 
   // Test
   await EVMTransactionStorage.collection.deleteMany({});
   await EVMTransactionStorage.collection.insertMany(txs);
 
-  const res = (new Transform({
-    transform: (data, _, cb) => cb(null, data)
+  let counter = 0;
+  const req = (new Writable({
+    write: function(data, _, cb) {
+      data && counter++;
+      cb();
+    }
+  }) as unknown) as Request;
+
+  const res = (new Writable({
+    write: function(data, _, cb) {
+      data && counter++;
+      cb();
+    }
   }) as unknown) as Response;
   res.type = () => res;
 
-  await MATIC.streamWalletTransactions({
-    chain,
-    network,
-    wallet,
-    res,
-    args: {
-      includeInvalidTxs
-    }
-  } as StreamWalletTransactionsParams)
-
-  let counter = 0;
-  await new Promise(r => {
+  const err = await new Promise(r => {
     res
-      .on('data', () => counter++)
-      .on('end', r);
+      .on('error', r)
+      .on('finish', r);
+
+    MATIC.streamWalletTransactions({
+      chain,
+      network,
+      wallet,
+      req,
+      res,
+      args: {
+        includeInvalidTxs
+      }
+    } as StreamWalletTransactionsParams)
+      .catch(e => r(e));
   });
 
+  expect(err).to.not.exist;
   expect(counter).to.eq(includeInvalidTxs ? txCount * 2 : txCount);
   sandbox.restore();
 };

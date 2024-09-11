@@ -1,9 +1,9 @@
-import through2 from 'through2';
-import { StreamTransactionParams } from '../../../types/namespaces/ChainStateProvider';
+import { GetBlockBeforeTimeParams, StreamTransactionParams } from '../../../types/namespaces/ChainStateProvider';
 import { StreamBlocksParams } from '../../../types/namespaces/ChainStateProvider';
 
 import { Validation } from 'crypto-wallet-core';
 import { ObjectId } from 'mongodb';
+import { Transform } from 'stream';
 import { LoggifyClass } from '../../../decorators/Loggify';
 import { MongoBound } from '../../../models/base';
 import { BitcoinBlockStorage, IBtcBlock } from '../../../models/block';
@@ -40,7 +40,7 @@ import {
   WalletCheckParams
 } from '../../../types/namespaces/ChainStateProvider';
 import { TransactionJSON } from '../../../types/Transaction';
-import { StringifyJsonStream } from '../../../utils/stringifyJsonStream';
+import { StringifyJsonStream } from '../../../utils/jsonStream';
 import { ListTransactionsStream } from './transforms';
 
 @LoggifyClass
@@ -163,7 +163,7 @@ export class InternalStateProvider implements IChainStateService {
       query.time = { $gt: new Date(startDate) };
     }
     if (endDate) {
-      Object.assign(query.time, { ...query.time, $lt: new Date(endDate) });
+      query.time = Object.assign({}, query.time, { $lt: new Date(endDate) });
     }
     if (date) {
       let firstDate = new Date(date);
@@ -179,18 +179,19 @@ export class InternalStateProvider implements IChainStateService {
     return blocks[0];
   }
 
-  async getBlockBeforeTime(params: { chain: string; network: string; time: Date }) {
+  async getBlockBeforeTime(params: GetBlockBeforeTimeParams): Promise<IBlock|null> {
     const { chain, network, time } = params;
+    const date = new Date(time || Date.now());
     const [block] = await BitcoinBlockStorage.collection
       .find({
         chain,
         network,
-        timeNormalized: { $lte: new Date(time) }
+        timeNormalized: { $lte: date }
       })
       .limit(1)
       .sort({ timeNormalized: -1 })
       .toArray();
-    return block as IBlock;
+    return block;
   }
 
   async streamTransactions(params: StreamTransactionsParams) {
@@ -274,7 +275,8 @@ export class InternalStateProvider implements IChainStateService {
       state && state.initialSyncComplete && state.initialSyncComplete.includes(`${chain}:${network}`);
     const walletConfig = Config.for('api').wallets;
     const canCreate = walletConfig && walletConfig.allowCreationBeforeCompleteSync;
-    if (!initialSyncComplete && !canCreate) {
+    const isP2P = this.isP2p({ chain, network });
+    if (isP2P && !initialSyncComplete && !canCreate) {
       throw new Error('Wallet creation not permitted before intitial sync is complete');
     }
     const wallet: IWallet = {
@@ -290,8 +292,8 @@ export class InternalStateProvider implements IChainStateService {
   }
 
   async getWallet(params: GetWalletParams) {
-    const { pubKey } = params;
-    return WalletStorage.collection.findOne({ pubKey });
+    const { chain, pubKey } = params;
+    return WalletStorage.collection.findOne({ chain, pubKey });
   }
 
   streamWalletAddresses(params: StreamWalletAddressesParams) {
@@ -321,6 +323,10 @@ export class InternalStateProvider implements IChainStateService {
     });
   }
 
+  isP2p({ chain, network }) {
+    return Config.chainConfig({ chain, network })?.chainSource !== 'p2p';
+  }
+
   async streamMissingWalletAddresses(params: StreamWalletMissingAddressesParams) {
     const { chain, network, pubKey, res } = params;
     const wallet = await WalletStorage.collection.findOne({ pubKey });
@@ -332,9 +338,9 @@ export class InternalStateProvider implements IChainStateService {
     const allMissingAddresses = new Array<string>();
     let totalMissingValue = 0;
     const missingStream = cursor.pipe(
-      through2(
-        { objectMode: true },
-        async (spentCoin: MongoBound<ICoin>, _, done) => {
+      new Transform({
+        objectMode: true,
+        async transform(spentCoin: MongoBound<ICoin>, _, next) {
           if (!seen[spentCoin.spentTxid]) {
             seen[spentCoin.spentTxid] = true;
             // find coins that were spent with my coins
@@ -351,16 +357,15 @@ export class InternalStateProvider implements IChainStateService {
                 return { _id, wallets, address, value, expected: walletId.toHexString() };
               });
             if (missing.length > 0) {
-              return done(undefined, { txid: spentCoin.spentTxid, missing });
+              return next(undefined, { txid: spentCoin.spentTxid, missing });
             }
           }
-          return done();
+          return next();
         },
-        function(done) {
-          this.push({ allMissingAddresses, totalMissingValue });
-          done();
+        flush(done) {
+          done(null, { allMissingAddresses, totalMissingValue });
         }
-      )
+      })
     );
     missingStream.pipe(new StringifyJsonStream()).pipe(res);
   }
@@ -459,12 +464,12 @@ export class InternalStateProvider implements IChainStateService {
   }
 
   async getFee(params: GetEstimateSmartFeeParams) {
-    const { chain, network, target } = params;
-    const cacheKey = `getFee-${chain}-${network}-${target}`;
+    const { chain, network, target, mode } = params;
+    const cacheKey = `getFee-${chain}-${network}-${target}${mode ? '-' + mode.toLowerCase() : ''}`;
     return CacheStorage.getGlobalOrRefresh(
       cacheKey,
       async () => {
-        return this.getRPC(chain, network).getEstimateSmartFee(Number(target));
+        return this.getRPC(chain, network).getEstimateSmartFee(Number(target), mode);
       },
       5 * CacheStorage.Times.Minute
     );

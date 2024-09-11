@@ -1,3 +1,4 @@
+import { Binary } from 'bson';
 import { LoggifyClass } from '../../../../decorators/Loggify';
 import logger from '../../../../logger';
 import { MongoBound } from '../../../../models/base';
@@ -6,7 +7,7 @@ import { EventStorage } from '../../../../models/events';
 import { StorageService } from '../../../../services/storage';
 import { IBlock } from '../../../../types/Block';
 import { TransformOptions } from '../../../../types/TransformOptions';
-import { IEVMBlock, IEVMTransaction } from '../types';
+import { IEVMBlock, IEVMTransactionInProcess } from '../types';
 import { EVMTransactionStorage } from './transaction';
 
 @LoggifyClass
@@ -21,7 +22,7 @@ export class EVMBlockModel extends BaseBlock<IEVMBlock> {
 
   async addBlock(params: {
     block: IEVMBlock;
-    transactions: IEVMTransaction[];
+    transactions: IEVMTransactionInProcess[];
     parentChain?: string;
     forkHeight?: number;
     initialSyncComplete: boolean;
@@ -50,7 +51,7 @@ export class EVMBlockModel extends BaseBlock<IEVMBlock> {
 
   async processBlock(params: {
     block: IEVMBlock;
-    transactions: IEVMTransaction[];
+    transactions: IEVMTransactionInProcess[];
     parentChain?: string;
     forkHeight?: number;
     initialSyncComplete: boolean;
@@ -197,6 +198,7 @@ export class EVMBlockModel extends BaseBlock<IEVMBlock> {
           .find({
             chain,
             network,
+            processed: true,
             height: heightQuery
           })
           .sort({ chain: 1, network: 1, processed: 1, height: -1 }) // guarantee index use by using this sort
@@ -250,6 +252,35 @@ export class EVMBlockModel extends BaseBlock<IEVMBlock> {
         clearTimeout(timeout);
       }
     });
+  }
+
+  convertRawBlock(chain: string, network: string, block: any): IEVMBlock {
+    return {
+      chain,
+      network,
+      height: block.number,
+      hash: block.hash,
+      coinbase: new Binary(Buffer.from(block.miner)),
+      merkleRoot: new Binary(Buffer.from((block as any).transactionsRoot)), // TODO: rm `as any` if web3 is updated and fixes itself
+      time: new Date(Number(block.timestamp) * 1000),
+      timeNormalized: new Date(Number(block.timestamp) * 1000),
+      nonce: new Binary(Buffer.from(block.extraData)),
+      previousBlockHash: block.parentHash,
+      difficulty: block.difficulty.toString(),
+      totalDifficulty: block.totalDifficulty.toString(),
+      nextBlockHash: '',
+      transactionCount: block.transactions.length,
+      size: block.size,
+      reward: 0,
+      logsBloom: new Binary(Buffer.from(block.logsBloom)),
+      sha3Uncles: new Binary(Buffer.from(block.sha3Uncles)),
+      receiptsRoot: new Binary(Buffer.from(block.receiptsRoot)),
+      processed: false,
+      gasLimit: block.gasLimit,
+      gasUsed: block.gasUsed,
+      baseFeePerGas: block.baseFeePerGas,
+      stateRoot: new Binary(Buffer.from(block.stateRoot)),
+    } as IEVMBlock;
   }
 }
 

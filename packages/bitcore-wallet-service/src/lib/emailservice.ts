@@ -5,13 +5,16 @@ import 'source-map-support/register';
 // This has been changed in favor of @sendgrid.  To use nodemail, change the
 // sending function from `.send` to `.sendMail`.
 // import * as nodemailer from nodemailer';
+import { Constants as ConstantsCWC } from 'crypto-wallet-core';
 import request from 'request';
+import config from '../config';
 import { Common } from './common';
 import { Lock } from './lock';
 import logger from './logger';
 import { MessageBroker } from './messagebroker';
 import { Email } from './model';
 import { Storage } from './storage';
+
 export interface Recipient {
   copayerId: string;
   emailAddress: string;
@@ -258,6 +261,7 @@ export class EmailService {
       doge: 'DOGE',
       ltc: 'LTC',
       usdc: 'USDC',
+      pyusd: 'PYUSD',
       usdp: 'USDP',
       gusd: 'GUSD',
       busd: 'BUSD',
@@ -266,7 +270,8 @@ export class EmailService {
       shib: 'SHIB',
       ape: 'APE',
       euroc: 'EUROC',
-      usdt: 'USDT'
+      usdt: 'USDT',
+      weth: 'WETH'
     };
 
     const data = _.cloneDeep(notification.data);
@@ -283,6 +288,15 @@ export class EmailService {
             label = UNIT_LABELS[unit];
           } else if (Constants.MATIC_TOKEN_OPTS[tokenAddress]) {
             unit = Constants.MATIC_TOKEN_OPTS[tokenAddress].symbol.toLowerCase();
+            label = UNIT_LABELS[unit];
+          } else if (Constants.ARB_TOKEN_OPTS[tokenAddress]) {
+            unit = Constants.ARB_TOKEN_OPTS[tokenAddress].symbol.toLowerCase();
+            label = UNIT_LABELS[unit];
+          } else if (Constants.OP_TOKEN_OPTS[tokenAddress]) {
+            unit = Constants.OP_TOKEN_OPTS[tokenAddress].symbol.toLowerCase();
+            label = UNIT_LABELS[unit];
+          } else if (Constants.BASE_TOKEN_OPTS[tokenAddress]) {
+            unit = Constants.BASE_TOKEN_OPTS[tokenAddress].symbol.toLowerCase();
             label = UNIT_LABELS[unit];
           } else {
             let customTokensData;
@@ -369,7 +383,7 @@ export class EmailService {
         let errStr;
         try {
           errStr = err.toString().substr(0, 100);
-        } catch (e) {}
+        } catch (e) { }
 
         logger.warn('An error occurred when trying to send email to %o %o', email.to, (errStr || err));
         return cb(err);
@@ -425,7 +439,7 @@ export class EmailService {
   }
 
   sendEmail(notification, cb) {
-    cb = cb || function() {};
+    cb = cb || function() { };
 
     const emailType = EMAIL_TYPES[notification.type];
     if (!emailType) return cb();
@@ -496,7 +510,7 @@ export class EmailService {
                   let errStr;
                   try {
                     errStr = err.toString().substr(0, 100);
-                  } catch (e) {}
+                  } catch (e) { }
 
                   logger.warn('An error ocurred generating email notification: %o', errStr || err);
                 }
@@ -509,29 +523,48 @@ export class EmailService {
     });
   }
 
-  getTokenData(chain) {
+  private oneInchGetCredentials() {
+    if (!config.oneInch) throw new Error('1Inch missing credentials');
+
+    const credentials = {
+      API: config.oneInch.api,
+      API_KEY: config.oneInch.apiKey,
+      referrerAddress: config.oneInch.referrerAddress,
+      referrerFee: config.oneInch.referrerFee
+    };
+
+    return credentials;
+  }
+
+  public getTokenData(chain: string) {
     return new Promise((resolve, reject) => {
-      const chainIdMap = {
-        eth: 1,
-        matic: 137
-      };
-      // Get tokens
-      this.request(
-        {
-          url: `https://bitpay.api.enterprise.1inch.exchange/v3.0/${chainIdMap[chain]}/tokens`,
-          method: 'GET',
-          json: true,
-          headers: {
-            'Content-Type': 'application/json'
+      try {
+        const credentials = this.oneInchGetCredentials();
+        // Get mainnet chainId
+        const chainId = ConstantsCWC.EVM_CHAIN_NETWORK_TO_CHAIN_ID[`${chain.toUpperCase()}_mainnet`]
+        this.request(
+          {
+            url: `${credentials.API}/v5.2/${chainId}/tokens`,
+            method: 'GET',
+            json: true,
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Authorization: 'Bearer ' + credentials.API_KEY,
+            }
+          },
+          (err, data) => {
+            if (err) return reject(err);
+            if (data?.statusCode === 429) {
+              // oneinch rate limit
+              return reject();
+            }
+            return resolve(data?.body?.tokens);
           }
-        },
-        (err, data: any) => {
-          if (err) return reject(err);
-          return resolve(data.body.tokens);
-        }
-      );
+        );
+      } catch (err) {
+        return reject(err);
+      }
     });
   }
 }
-
-module.exports = EmailService;

@@ -4,11 +4,10 @@ import * as worker from 'worker_threads';
 import logger from '../../../../logger';
 import { Config } from '../../../../services/config';
 import { Storage } from '../../../../services/storage';
-import { valueOrDefault } from '../../../../utils/check';
-import { wait } from '../../../../utils/wait';
+import { wait } from '../../../../utils';
 import { EVMBlockStorage } from '../models/block';
 import { EVMTransactionStorage } from '../models/transaction';
-import { AnyBlock, ErigonTransaction, GethTransaction, IEVMBlock, IEVMTransaction } from '../types';
+import { AnyBlock, ErigonTransaction, IEVMBlock, IEVMTransactionInProcess } from '../types';
 import { IRpc, Rpcs } from './rpcs';
 
 export class SyncWorker {
@@ -115,7 +114,7 @@ export class SyncWorker {
     return { web3: this.web3, rpc: this.rpc };
   }
 
-  async processBlock(block: IEVMBlock, transactions: IEVMTransaction[]): Promise<any> {
+  async processBlock(block: IEVMBlock, transactions: IEVMTransactionInProcess[]): Promise<any> {
     await EVMBlockStorage.addBlock({
       chain: this.chain,
       network: this.network,
@@ -164,61 +163,14 @@ export class SyncWorker {
       stateRoot: Buffer.from(block.stateRoot)
     };
     const transactions = block.transactions as Array<ErigonTransaction>;
-    const convertedTxs = transactions.map(t => this.convertTx(t, convertedBlock));
+    const convertedTxs = transactions.map(t => EVMTransactionStorage.convertRawTx(this.chain, this.network, t, convertedBlock));
     const traceTxs = await this.rpc!.getTransactionsFromBlock(convertedBlock.height);
-
+    EVMTransactionStorage.addEffectsToTxs(convertedTxs);
     this.rpc!.reconcileTraces(convertedBlock, convertedTxs, traceTxs);
 
     return { convertedBlock, convertedTxs };
   }
 
-  convertTx(tx: Partial<ErigonTransaction | GethTransaction>, block?: IEVMBlock): IEVMTransaction {
-    const txid = tx.hash || '';
-    const to = tx.to || '';
-    const from = tx.from || '';
-    const value = Number(tx.value);
-    const fee = Number(tx.gas) * Number(tx.gasPrice);
-    const abiType = EVMTransactionStorage.abiDecode(tx.input!);
-    const nonce = tx.nonce || 0;
-    const convertedTx: IEVMTransaction = {
-      chain: this.chain,
-      network: this.network,
-      blockHeight: valueOrDefault(tx.blockNumber, -1),
-      blockHash: valueOrDefault(tx.blockHash, undefined),
-      data: Buffer.from(tx.input || '0x'),
-      txid,
-      blockTime: new Date(),
-      blockTimeNormalized: new Date(),
-      fee,
-      transactionIndex: tx.transactionIndex || 0,
-      value,
-      wallets: [],
-      to,
-      from,
-      gasLimit: Number(tx.gas),
-      gasPrice: Number(tx.gasPrice),
-      // gasUsed: Number(tx.gasUsed),
-      nonce,
-      internal: [],
-      calls: []
-    };
-
-    if (abiType) {
-      convertedTx.abiType = abiType;
-    }
-
-    if (block) {
-      const { hash: blockHash, time: blockTime, timeNormalized: blockTimeNormalized, height } = block;
-      return {
-        ...convertedTx,
-        blockHeight: height,
-        blockHash,
-        blockTime,
-        blockTimeNormalized
-      };
-    }
-    return convertedTx;
-  }
 }
 
 worker.parentPort!.once('message', async function(msg) {
