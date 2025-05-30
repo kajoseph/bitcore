@@ -96,16 +96,6 @@ export class Credentials {
 
   /**
    * Create credentials from a derived key
-   * @param opts
-   * @param {string} opts.coin Deprecated - use opts.chain
-   * @param {string} opts.chain
-   * @param {string} opts.network
-   * @param {number} opts.account
-   * @param {string} opts.xPubKey
-   * @param {string} opts.rootPath
-   * @param {string} opts.keyId
-   * @param {string} opts.requestPrivKey
-   * @returns 
    */
   static fromDerivedKey(opts: {
     coin?: string; // Deprecated - use opts.chain
@@ -176,6 +166,23 @@ export class Credentials {
     ];
     x.clientDerivedPublicKey = opts.clientDerivedPublicKey;
     return x;
+  }
+
+  /**
+   * Create credentials from a derived key
+   * @param opts
+   * @param {string} opts.coin Deprecated - use opts.chain
+   * @param {string} opts.chain
+   * @param {string} opts.network
+   * @param {number} opts.account
+   * @param {string} opts.xPubKey
+   * @param {string} opts.rootPath
+   * @param {string} opts.keyId
+   * @param {string} opts.requestPrivKey
+   * @returns 
+   */
+  static fromDerivedKey_WOTypeSafety(opts) {
+    console.log('make opts whatever you want');
   }
 
   /*
