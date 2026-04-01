@@ -42,7 +42,7 @@ export async function sign(args: {
       derivationPath,
       password
     });
-  } catch (err) {
+  } catch (err: any) {
     if (err.message?.startsWith('TSS_ROUND_ALREADY_DONE')) {
       const sig = await tssSign.getSignatureFromServer();
       if (!sig) {

@@ -2028,7 +2028,7 @@ export class API extends EventEmitter {
     /** Array of signatures */
     signatures: Array<string>,
     /** @deprecated */
-    cb?: (err?: Error, txp?: Txp) => void,
+    cb?: (err?: Error, txp?: SignedTxp) => void,
     /** ONLY FOR TESTING */
     baseUrl?: string
   ) {
@@ -2052,11 +2052,11 @@ export class API extends EventEmitter {
       baseUrl = baseUrl || '/v2/txproposals/';
       const url = `${baseUrl}${txp.id}/signatures/`;
       const args = { signatures };
-      const { body: signedTxp } = await this.request.post<object, Txp>(url, args);
+      const { body: signedTxp } = await this.request.post<object, SignedTxp>(url, args);
       this._processTxps(signedTxp);
-      if (cb) { cb(null, signedTxp); }
+      if (cb) { cb(undefined, signedTxp); }
       return signedTxp;
-    } catch (err) {
+    } catch (err: any) {
       if (cb) cb(err);
       else throw err;
     }
@@ -4158,7 +4158,7 @@ export interface Txp {
     type?: string;
     copayerName?: string;
     comment?: string;
-  }>; // TODO
+  }>;
   addressType: string;
   amount: number;
   chain: string;
@@ -4227,6 +4227,14 @@ export interface Txp {
   walletM: number;
   walletN: number;
 };
+
+export interface SignedTxp extends Txp {
+  actions: Array<{
+    type?: string;
+    copayerName?: string;
+    comment?: string;
+  }>;
+}
 
 export interface PublishedTxp extends Txp {
   blockHash?: string;

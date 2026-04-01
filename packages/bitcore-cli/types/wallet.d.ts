@@ -25,7 +25,7 @@ export interface IWallet {
   dir: string;
   filename: string;
   host: string;
-  walletId: string;
+  walletId: string | undefined; // For support staff wallets to query other wallets
   client: ClientType;
   isFullyEncrypted?: boolean;
   chain: string;
@@ -57,7 +57,7 @@ export interface IWallet {
     copayerName: string;
   }): Promise<{ key: TssKeyType; credentials: Credentials }>;
   register(args: { copayerName: string }): Promise<string | undefined>;
-  load(opts?: { doNotComplete?: boolean; allowCache?: boolean }): Promise<KeyType | TssKeyType>;
+  load(opts?: { doNotComplete?: boolean; allowCache?: boolean }): Promise<KeyType | TssKeyType | undefined>;
   save(opts?: { encryptAll?: boolean }): Promise<void>;
   export(args: {
     filename: string;
@@ -68,11 +68,11 @@ export interface IWallet {
     importPassword?: string;
   }): Promise<void>;
   isComplete(): boolean;
-  getToken(args: { token?: string; tokenAddress?: string }): Promise<ITokenObj>;
-  getTokenByAddress(args: { tokenAddress: string }): Promise<ITokenObj>;
-  getTokenByName(args: { token: string }): Promise<ITokenObj>;
-  getTokenFromChain(args: { address: string }): Promise<ITokenObj>;
-  getNativeCurrency(fallback?: boolean): Promise<ITokenObj | null>;
+  getToken(args: { token?: string; tokenAddress?: string }): Promise<ITokenObj | undefined>;
+  getTokenByAddress(args: { tokenAddress: string }): Promise<ITokenObj | undefined>;
+  getTokenByName(args: { token: string }): Promise<ITokenObj | undefined>;
+  getTokenFromChain(args: { address: string }): Promise<ITokenObj | undefined>;
+  getNativeCurrency(fallback?: boolean): Promise<ITokenObj | undefined>;
   getPasswordWithRetry(): Promise<string>;
   signTxp(args: { txp: Txp }): Promise<Array<string>>;
   signAndBroadcastTxp(args: { txp: Txp }): Promise<Txp>;

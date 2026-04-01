@@ -44,7 +44,7 @@ export function isSingleAddressChain(chain: string): boolean {
   return !isUtxoChain(chain);
 }
 
-export function encodeBuffer(buffer: Buffer, encoding: BufferEncoding | 'base58'): Buffer | string {
+export function encodeBuffer(buffer: Buffer, encoding?: BufferEncoding | 'base58'): Buffer | string {
   if (!encoding) {
     return buffer;
   } else if (encoding === 'base58') {

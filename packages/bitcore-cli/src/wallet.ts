@@ -56,8 +56,8 @@ export class Wallet implements IWallet {
   filename: string;
   storage: FileStorage;
   host: string;
-  walletId: string; // For support staff wallets to query other wallets
-  #walletData: WalletData;
+  walletId: string | undefined; // For support staff wallets to query other wallets
+  #walletData: WalletData = {} as WalletData;
   client: ClientType;
   isFullyEncrypted?: boolean; // All wallet data is encrypted, not just the mnemonic/private key(s)
 
@@ -86,7 +86,7 @@ export class Wallet implements IWallet {
     Wallet.setVerbose(verbose);
   }
 
-  static setVerbose(v: boolean) {
+  static setVerbose(v: boolean = false) {
     _verbose = !!v;
     Utils.setVerbose(v);
   }
@@ -206,7 +206,7 @@ export class Wallet implements IWallet {
   async load(opts?: { doNotComplete?: boolean; allowCache?: boolean }) {
     const { doNotComplete, allowCache } = opts || {};
 
-    let walletData: WalletData | EncryptionTypes.IEncrypted = allowCache ? this.#walletData : null;
+    let walletData: WalletData | EncryptionTypes.IEncrypted | null = allowCache ? this.#walletData : null;
     if (!walletData) {
       walletData = await this.storage.load();
     }
@@ -227,15 +227,15 @@ export class Wallet implements IWallet {
         return undefined; // read-only wallet
       }
       const obj = walletData.key.toObj ? walletData.key.toObj() : walletData.key;
-      if ((obj as TssKeyType).metadata) {
-        return new TssKey.TssKey(obj as TssKeyType);
+      if ((obj as TssKey.ITssKey).metadata) {
+        return new TssKey.TssKey(obj as TssKey.ITssKey);
       } else {
         obj.version = obj.version ?? 1;
         return new Key({ seedType: 'object', seedData: obj });
       }
     };
 
-    let key: KeyType;
+    let key: KeyType | TssKeyType | undefined;
     try {
       const imported = Client.upgradeCredentialsV1(walletData);
       this.client.fromString(JSON.stringify(imported.credentials));
@@ -245,7 +245,7 @@ export class Wallet implements IWallet {
       try {
         this.client.fromObj(walletData.credentials);
         key = instantiateKey();
-      } catch (e) {
+      } catch (e: any) {
         Utils.die('Corrupt wallet file:' + (_verbose && e.stack ? e.stack : e));
       }
     }
@@ -273,7 +273,7 @@ export class Wallet implements IWallet {
       if (!this.#walletData) {
         throw new Error('No wallet data to save. Wallet not created or loaded');
       }
-      let data: WalletData | EncryptionTypes.IEncrypted = { key: this.#walletData.key.toObj(), credentials: this.#walletData.credentials.toObj() };
+      let data: WalletData | EncryptionTypes.IEncrypted = { key: this.#walletData.key?.toObj(), credentials: this.#walletData.credentials.toObj() };
       if (encryptAll) {
         const password = await getPassword('Enter password to encrypt:', { minLength: 6 });
         await prompt.password({
@@ -286,7 +286,7 @@ export class Wallet implements IWallet {
       }
       await this.storage.save(JSON.stringify(data));
       return;
-    } catch (err) {
+    } catch (err: any) {
       Utils.die(err);
     }
   }
@@ -300,13 +300,13 @@ export class Wallet implements IWallet {
       throw new Error('No wallet data to save. Wallet not created or loaded');
     }
     
-    let key;
+    let key: KeyType | TssKeyType;
     if (this.#walletData.key instanceof TssKey.TssKey) {
       key = new TssKey.TssKey(this.#walletData.key.toObj());
     } else {
-      key = new Key({ seedType: 'object', seedData: this.#walletData.key.toObj() });
+      key = new Key({ seedType: 'object', seedData: this.#walletData.key?.toObj() });
     }
-    if (key.isPrivKeyEncrypted() || key.isKeyChainEncrypted?.()) {
+    if (key.isPrivKeyEncrypted() || (key as TssKeyType).isKeyChainEncrypted?.()) {
       const walletPassword = await getPassword('Wallet password:');
       key.decrypt(walletPassword);
     }
@@ -325,7 +325,7 @@ export class Wallet implements IWallet {
 
   async import(args: {
     filename: string;
-    importPassword?: string;
+    importPassword: string;
   }) {
     const { filename, importPassword } = args;
     let data: any = await fs.promises.readFile(filename, 'utf8');
@@ -364,7 +364,7 @@ export class Wallet implements IWallet {
       };
       let response: Response;
       try {
-        response = await fetch(urls[network], { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        response = await fetch(urls[network] as string, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
         if (!response.ok) {
           throw new Error(`Failed to fetch currencies for wallet token check: ${response.statusText}`);
         }
@@ -401,7 +401,7 @@ export class Wallet implements IWallet {
     } else if (token) {
       return this.getTokenByName({ token });
     }
-    return null;
+    return undefined;
   }
   
   async getTokenByAddress(args: { tokenAddress: string }) {
@@ -439,9 +439,9 @@ export class Wallet implements IWallet {
     } as ITokenObj;
   }
 
-  async getNativeCurrency(fallback?: boolean): Promise<ITokenObj | null> {
+  async getNativeCurrency(fallback?: boolean): Promise<ITokenObj | undefined> {
     const chain = this.chain.toUpperCase();
-    let retval = null;
+    let retval: ITokenObj | undefined;
     try {
       const currencies = await Wallet.getCurrencies(this.network);
       retval = currencies.find(c => c.chain === chain && c.native);
@@ -449,7 +449,7 @@ export class Wallet implements IWallet {
       prompt.log.warn(`Unable to fetch native currency for ${chain}: ${err}`);
     }
     if (fallback && !retval) {
-      retval = { displayCode: chain };
+      retval = { displayCode: chain } as ITokenObj;
     }
     return retval;
   }
@@ -461,7 +461,8 @@ export class Wallet implements IWallet {
         hidden: true,
         validate: (input) => {
           try {
-            this.#walletData.key.get(input);
+            this.#walletData.key!.get(input);
+            return null;
           } catch {
             return 'Invalid password. Please try again.';
           }
@@ -474,6 +475,9 @@ export class Wallet implements IWallet {
   async signTxp(args: {
     txp: Txp;
   }): Promise<string[]> {
+    if (this.isReadOnly()) {
+      throw new Error('Cannot sign transaction proposal with a read-only wallet.');
+    }
     const { txp } = args;
     if (!this.client) {
       await this.getClient({ mustExist: true });
@@ -485,7 +489,7 @@ export class Wallet implements IWallet {
     }
 
     const rootPath = this.client.getRootPath();
-    const sigs = await this.#walletData.key.sign(rootPath, txp, password);
+    const sigs = await this.#walletData.key!.sign(rootPath, txp, password);
     return sigs;
   }
 
@@ -571,6 +575,9 @@ export class Wallet implements IWallet {
     derivationPath: string;
     encoding?: BufferEncoding | 'base58';
   }): Promise<CWCTypes.Message.ISignedMessage> {
+    if (this.isReadOnly()) {
+      throw new Error('Cannot sign message with a read-only wallet.');
+    }
     const { message, derivationPath, encoding } = args;
 
     if (!this.client) {
@@ -584,14 +591,14 @@ export class Wallet implements IWallet {
       return this._signMessageWithTss({ messageHash, derivationPath, password, encoding });
     }
 
-    const hdPrivateKey = this.#walletData.key.get(password).xPrivKey;
+    const hdPrivateKey = this.#walletData.key!.get(password).xPrivKey;
     const fullDerivationPath = this.client.getRootPath() + derivationPath.replace('m', '');
     return Message.signMessageWithPath({ chain, message, derivationPath: fullDerivationPath, hdPrivateKey, encoding });
   }
 
   async _signMessageWithTss(args: {
     messageHash: Buffer;
-    derivationPath?: string;
+    derivationPath: string;
     password?: string;
     encoding?: BufferEncoding | 'base58';
   }): Promise<CWCTypes.Message.ISignedMessage> {
@@ -618,8 +625,11 @@ export class Wallet implements IWallet {
   }
 
   async getXPrivKey(password?: string): Promise<string> {
+    if (this.isReadOnly()) {
+      throw new Error('Cannot get xPrivKey from a read-only wallet.');
+    }
     password = password || await getPassword();
-    return this.#walletData.key.get(password).xPrivKey;
+    return this.#walletData.key!.get(password).xPrivKey;
   }
 
   getXPubKey() {
@@ -639,7 +649,8 @@ export class Wallet implements IWallet {
   }
 
   isWalletEncrypted() {
-    return this.#walletData.key.isPrivKeyEncrypted() || (this.#walletData.key as TssKey.TssKey).isKeyChainEncrypted?.();
+    if (this.isReadOnly()) return false;
+    return this.#walletData.key!.isPrivKeyEncrypted() || (this.#walletData.key as TssKey.TssKey).isKeyChainEncrypted?.();
   }
 
   isUtxo() {
