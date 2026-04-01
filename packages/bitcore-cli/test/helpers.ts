@@ -1,5 +1,6 @@
 import sinon from 'sinon';
 import assert from 'assert';
+import fs from 'fs';
 import * as CWC from '@bitpay-labs/crypto-wallet-core';
 import BWS from '@bitpay-labs/bitcore-wallet-service';
 import { API, Constants } from '@bitpay-labs/bitcore-wallet-client';
@@ -26,7 +27,10 @@ export const CONSTANTS = {
   WALLETS: {
     PASSWORD: 'testpassword',
     CLI_EXEC: 'build/src/cli.js',
-    CLI_OPTS: { env: { ...process.env, NO_COLOR: '1' } }, // FORCE_COLOR=1 to force colors in output, NO_COLOR=1 to disable colors in output (for easier testing)
+    CLI_OPTS: {
+      env: { ...process.env, NO_COLOR: '1' }, // FORCE_COLOR=1 to force colors in output, NO_COLOR=1 to disable colors in output (for easier testing)
+      detached: true // Ensure child process is in its own process group, so it can die without killing the parent test process
+    },
     DIR: path.join(__dirname, './wallets'),
     TEMP_DIR: path.join(__dirname, './wallets/temp'),
     COMMON_OPTS: ['--verbose', '--host', `http://localhost:${config.bws.port}`],
@@ -50,7 +54,9 @@ export const CONSTANTS = {
 };
 
 export async function newDb() {
-  client = await MongoClient.connect(config.mongoDb.uri, config.mongoDb.options);
+  if (!client?.isConnected()) {
+    client = await MongoClient.connect(config.mongoDb.uri, config.mongoDb.options);
+  }
   const db = client.db(config.mongoDb.dbname);
   await db.dropDatabase();
   return { client, db };
@@ -58,7 +64,9 @@ export async function newDb() {
 
 export async function startBws() {
   const { db } = await newDb();
-  storage = new Storage({ db });
+  if (!storage) {
+    storage = new Storage({ db });
+  }
   Storage.createIndexes(db);
   expressApp = new ExpressApp();
   return new Promise<{ storage: InstanceType<typeof Storage> }>(resolve => {
@@ -83,11 +91,19 @@ export async function startBws() {
 }
 
 export async function stopBws() {
-  return new Promise<void>(resolve => {
+  return new Promise<void>((resolve, reject) => {
     (API.prototype.constructor as any).restore();
     expressApp.app.removeAllListeners();
     server.close();
-    client.close(false, resolve);
+    storage.disconnect((err) => {
+      if (err) return reject(err);
+      client.close(false, (err) => {
+        if (err) return reject(err);
+        storage = null;
+        client = null;
+        resolve();
+      });
+    });
   });
 };
 
@@ -231,5 +247,18 @@ export const blockchainExplorerMock = {
     blockchainExplorerMock.utxos = [];
     blockchainExplorerMock.txHistory = [];
     blockchainExplorerMock.feeLevels = [];
+  }
+};
+
+export function decolor(text: string) {
+  // eslint-disable-next-line no-control-regex
+  text = text?.replace(/\x1b\[[0-9]+m/g, ''); // Remove ANSI color codes
+  return text;
+};
+
+export function cleanupTempWallets() {
+  const { TEMP_DIR } = CONSTANTS.WALLETS;
+  if (fs.existsSync(TEMP_DIR)) {
+    fs.rmdirSync(TEMP_DIR, { recursive: true });
   }
 };

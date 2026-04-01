@@ -132,8 +132,9 @@ export class Wallet implements IWallet {
     mnemonic?: string;
     password?: string;
     addressType?: string;
+    joinSecret?: string;
   }) {
-    const { coin, chain, network, account, n, m, mnemonic, password, addressType, copayerName } = args;
+    const { coin, chain, network, account, n, m, mnemonic, password, addressType, copayerName, joinSecret } = args;
     let key: KeyType;
     if (mnemonic) {
       key = new Key({ seedType: 'mnemonic', seedData: mnemonic, password });
@@ -145,9 +146,16 @@ export class Wallet implements IWallet {
     this.client.fromObj(credentials);
     this.#walletData = { key, credentials };
     await this.save();
-    const secret = await this.register({ copayerName });
+    let secret;
+    let joinedWalletName;
+    if (joinSecret) {
+      const wallet = await this.client.joinWallet(joinSecret, copayerName, { chain });
+      joinedWalletName = wallet.name;
+    } else {
+      secret = await this.register({ copayerName });
+    }
     await this.load();
-    return { key, credentials, secret };
+    return { key, credentials, secret, joinedWalletName };
   }
 
   async createFromTss(args: {
@@ -258,11 +266,20 @@ export class Wallet implements IWallet {
     if (doNotComplete) return key;
 
     const status = await this.client.openWallet();
-    if (status?.wallet?.status === 'complete') {
+    let needsSave = status?.wallet?.status === 'complete';
+    if (
+      (!this.#walletData.credentials.isComplete() && this.client.credentials.isComplete()) ||
+      // For TSS creds, isComplete() may be true even if publicKeyRing isn't fully populated
+      this.#walletData.credentials.publicKeyRing.length < this.client.credentials.publicKeyRing.length
+    ) {
+      this.#walletData.credentials = this.client.credentials; // update with any new info from the chain
+      needsSave = true;
+    }
+    if (needsSave) {
       await this.save();
     }
     return key;
-  };
+  }
 
   async save(opts?: { encryptAll?: boolean }) {
     const { encryptAll } = opts || {};

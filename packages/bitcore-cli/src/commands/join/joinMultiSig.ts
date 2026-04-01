@@ -8,12 +8,12 @@ export async function joinMultiSigWallet(args: CommonArgs<{ mnemonic?: string }>
   const { wallet, opts } = args;
   const { verbose, mnemonic } = opts;
 
-  const secret = (await prompt.text({
+  const joinSecret = (await prompt.text({
     message: 'Enter the secret to join the wallet:',
     validate: (input) => input?.trim() ? null : 'Secret cannot be empty.',
   })).toString().trim();
   
-  const parsed = BWC.parseSecret(secret);
+  const parsed = BWC.parseSecret(joinSecret);
   const {
     coin: chain,
     network
@@ -21,11 +21,9 @@ export async function joinMultiSigWallet(args: CommonArgs<{ mnemonic?: string }>
 
   const copayerName = await getCopayerName();
   const password = await getPassword('Enter a password for the wallet:', { hidden: false });
-  const { key } = await wallet.create({ chain, network, account: 0, n: 2, password, mnemonic, copayerName }); // n gets overwritten
-  const joinedWallet = await wallet.client.joinWallet(secret, copayerName, { chain });
-  await wallet.load(); // Is this needed after joining?
+  const { key, joinedWalletName } = await wallet.create({ chain, network, account: 0, n: 2, m: 1, password, mnemonic, copayerName, joinSecret }); // n gets overwritten
   
-  prompt.log.success(Utils.colorText(`Wallet joined: ${joinedWallet.name}`, 'green'));
+  prompt.log.success(Utils.colorText(`Wallet joined: ${joinedWalletName}`, 'green'));
   verbose && prompt.log.step(`Wallet file saved to: ${Utils.colorText(wallet.filename, 'blue')}`);
   
   return {
