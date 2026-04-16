@@ -22,6 +22,7 @@ export type * as UtilsTypes from './lib/common/utils';
 export { Constants } from './lib/common/constants';
 export type * as ConstantsTypes from './lib/common/constants';
 export { Errors } from './lib/errors';
+export type { ServerAssistedImportEvents } from './types/serverAssistedImportEvents';
 
 export * as TssKey from './lib/tsskey';
 export * as TssSign from './lib/tsssign';

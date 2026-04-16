@@ -8134,6 +8134,224 @@ describe('Wallet service', function() {
     });
   });
 
+  describe('#prepareTx XRP (deferred nonce)', function() {
+    const XRP_ADDR = 'rDzTZxa7NwD9vmNf5dvTbW4FQDNSRsfPv6';
+    let server, wallet, fromAddr;
+
+    beforeEach(async function() {
+      ({ server, wallet } = await helpers.createAndJoinWallet(1, 1, { coin: 'xrp' }));
+      const address = await util.promisify(server.createAddress).call(server, {});
+      fromAddr = address.address;
+      await helpers.stubUtxos(server, wallet, [1, 2], { coin: 'xrp' });
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '5');
+    });
+
+    it('should create XRP txp with nonce=null when deferNonce is true', async function() {
+      const txp = await util.promisify(server.createTx).call(server, {
+        outputs: [{ toAddress: XRP_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr,
+        deferNonce: true
+      });
+      should.exist(txp);
+      txp.deferNonce.should.be.true;
+      should.not.exist(txp.nonce);
+    });
+
+    it('should assign nonce to a deferred XRP txp via prepareTx', async function() {
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '10');
+
+      const txp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: XRP_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr,
+        deferNonce: true
+      }, TestData.copayers[0].privKey_1H_0);
+
+      should.not.exist(txp.nonce);
+
+      const result = await util.promisify(server.prepareTx).call(server, {
+        txProposalId: txp.id
+      });
+      result.nonce.should.equal(10);
+    });
+
+    it('should calculate gap-free nonce for XRP skipping pending nonces', async function() {
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '5');
+
+      const normalTxp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: XRP_ADDR, amount: 1000 }],
+        feePerKb: 123e2,
+        from: fromAddr
+      }, TestData.copayers[0].privKey_1H_0);
+      normalTxp.nonce.should.equal('5');
+
+      const deferred = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: XRP_ADDR, amount: 2000 }],
+        feePerKb: 123e2,
+        from: fromAddr,
+        deferNonce: true
+      }, TestData.copayers[0].privKey_1H_0);
+
+      const result = await util.promisify(server.prepareTx).call(server, {
+        txProposalId: deferred.id
+      });
+      result.nonce.should.equal(6);
+    });
+
+    it('should sign XRP txp after prepareTx assigns nonce', async function() {
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '7');
+      helpers.stubBroadcast('txid123');
+
+      const txp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: XRP_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr,
+        deferNonce: true
+      }, TestData.copayers[0].privKey_1H_0);
+
+      const withNonce = await util.promisify(server.prepareTx).call(server, {
+        txProposalId: txp.id
+      });
+      withNonce.nonce.should.equal(7);
+
+      const fetched = await util.promisify(server.getTx).call(server, { txProposalId: txp.id });
+      const signatures = helpers.clientSign(fetched, TestData.copayers[0].xPrivKey_44H_0H_0H);
+      const signed = await util.promisify(server.signTx).call(server, {
+        txProposalId: txp.id,
+        signatures
+      });
+      signed.status.should.equal('accepted');
+    });
+  });
+
+  describe('#signTx nonce override', function() {
+    const ETH_ADDR = '0x37d7B3bBD88EFdE6a93cF74D2F5b0385D3E3B08A';
+    let server, wallet, fromAddr;
+
+    beforeEach(async function() {
+      ({ server, wallet } = await helpers.createAndJoinWallet(1, 1, { coin: 'eth' }));
+      const address = await util.promisify(server.createAddress).call(server, {});
+      fromAddr = address.address;
+      await helpers.stubUtxos(server, wallet, [1, 2], { coin: 'eth' });
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '5');
+    });
+
+    it('should accept nonce passthrough in signTx', async function() {
+      const txp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: ETH_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr
+      }, TestData.copayers[0].privKey_1H_0);
+      txp.nonce.should.equal('5');
+
+      const signatures = helpers.clientSign(txp, TestData.copayers[0].xPrivKey_44H_0H_0H);
+      const signed = await util.promisify(server.signTx).call(server, {
+        txProposalId: txp.id,
+        signatures,
+        nonce: Number(txp.nonce)
+      });
+      signed.status.should.equal('accepted');
+      signed.nonce.should.equal(5);
+    });
+
+    it('should accept nonce override in signTx', async function() {
+      const txp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: ETH_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr
+      }, TestData.copayers[0].privKey_1H_0);
+      txp.nonce.should.equal('5');
+
+      const overrideNonce = 99;
+      const fetched = await util.promisify(server.getTx).call(server, { txProposalId: txp.id });
+      fetched.nonce = overrideNonce;
+
+      const signatures = helpers.clientSign(fetched, TestData.copayers[0].xPrivKey_44H_0H_0H);
+      const signed = await util.promisify(server.signTx).call(server, {
+        txProposalId: txp.id,
+        signatures,
+        nonce: overrideNonce
+      });
+      signed.status.should.equal('accepted');
+      signed.nonce.should.equal(overrideNonce);
+    });
+
+    it('should reject nonce override that conflicts with pending txp', async function() {
+      const txp1 = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: ETH_ADDR, amount: 1000 }],
+        feePerKb: 123e2,
+        from: fromAddr
+      }, TestData.copayers[0].privKey_1H_0);
+      txp1.nonce.should.equal('5');
+
+      blockchainExplorer.getTransactionCount = sinon.stub().callsArgWith(1, null, '6');
+      const txp2 = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: ETH_ADDR, amount: 2000 }],
+        feePerKb: 123e2,
+        from: fromAddr
+      }, TestData.copayers[0].privKey_1H_0);
+      txp2.nonce.should.equal('6');
+
+      // sign txp2 with nonce 5 (conflicts with txp1)
+      const fetched = await util.promisify(server.getTx).call(server, { txProposalId: txp2.id });
+      fetched.nonce = 5;
+      const signatures = helpers.clientSign(fetched, TestData.copayers[0].xPrivKey_44H_0H_0H);
+
+      try {
+        await util.promisify(server.signTx).call(server, {
+          txProposalId: txp2.id,
+          signatures,
+          nonce: 5
+        });
+        throw new Error('should have thrown');
+      } catch (err) {
+        err.code.should.equal('TX_NONCE_CONFLICT');
+      }
+    });
+
+    it('should not crash on nonce conflict check when nonce is null', async function() {
+      const txp = await helpers.createAndPublishTx(server, {
+        outputs: [{ toAddress: ETH_ADDR, amount: 8000 }],
+        feePerKb: 123e2,
+        from: fromAddr,
+        deferNonce: true
+      }, TestData.copayers[0].privKey_1H_0);
+      should.not.exist(txp.nonce);
+
+      // null nonce on other txps should not throw in conflict check
+      const fetched = await util.promisify(server.getTx).call(server, { txProposalId: txp.id });
+      fetched.nonce = 99;
+      const signatures = helpers.clientSign(fetched, TestData.copayers[0].xPrivKey_44H_0H_0H);
+      const signed = await util.promisify(server.signTx).call(server, {
+        txProposalId: txp.id,
+        signatures,
+        nonce: 99
+      });
+      signed.status.should.equal('accepted');
+      signed.nonce.should.equal(99);
+    });
+
+    it('should ignore nonce override for non-EVM chains', async function() {
+      const { server: btcServer, wallet: btcWallet } = await helpers.createAndJoinWallet(1, 1);
+      await helpers.stubUtxos(btcServer, btcWallet, [1, 2]);
+
+      const txp = await helpers.createAndPublishTx(btcServer, {
+        outputs: [{ toAddress: '18PzpUFkFZE8zKWUPvfykkTxmB9oMR8qP7', amount: 8000 }],
+        feePerKb: 100e2,
+      }, TestData.copayers[0].privKey_1H_0);
+
+      const signatures = helpers.clientSign(txp, TestData.copayers[0].xPrivKey_44H_0H_0H);
+      const signed = await util.promisify(btcServer.signTx).call(btcServer, {
+        txProposalId: txp.id,
+        signatures,
+        nonce: 99
+      });
+      signed.status.should.equal('accepted');
+      should.not.exist(signed.nonce);
+    });
+  });
+
   describe('#broadcastTx & #broadcastRawTx', function() {
     let server: WalletService;
     let wallet: Model.Wallet;
