@@ -63,6 +63,7 @@ export interface IWallet {
   export(args: {
     filename: string;
     exportPassword?: string;
+    readOnly?: boolean;
   }): Promise<void>;
   import(args: {
     filename: string;

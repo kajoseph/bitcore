@@ -230,7 +230,7 @@ export class Wallet implements IWallet {
     walletData = (walletData as WalletData);
     
 
-    const instantiateKey = () => {
+    const instantiateKey = (walletData: WalletData) => {
       if (!walletData.key) {
         return undefined; // read-only wallet
       }
@@ -248,11 +248,11 @@ export class Wallet implements IWallet {
       const imported = Client.upgradeCredentialsV1(walletData);
       this.client.fromString(JSON.stringify(imported.credentials));
 
-      key = instantiateKey();
+      key = instantiateKey(walletData);
     } catch {
       try {
         this.client.fromObj(walletData.credentials);
-        key = instantiateKey();
+        key = instantiateKey(walletData);
       } catch (e) {
         Utils.die('Corrupt wallet file:' + (_verbose && e.stack ? e.stack : e));
       }
@@ -287,7 +287,7 @@ export class Wallet implements IWallet {
       if (!this.#walletData) {
         throw new Error('No wallet data to save. Wallet not created or loaded');
       }
-      let data: WalletData | EncryptionTypes.IEncrypted = { key: this.#walletData.key.toObj(), credentials: this.#walletData.credentials.toObj() };
+      let data: WalletData | EncryptionTypes.IEncrypted = { key: this.#walletData.key?.toObj(), credentials: this.#walletData.credentials.toObj() };
       if (encryptAll) {
         const password = await getPassword('Enter password to encrypt:', { minLength: 6 });
         await prompt.password({
@@ -308,24 +308,28 @@ export class Wallet implements IWallet {
   async export(args: {
     filename: string;
     exportPassword?: string;
+    readOnly?: boolean;
   }) {
-    const { filename, exportPassword } = args;
+    const { filename, exportPassword, readOnly } = args;
     if (!this.#walletData) {
       throw new Error('No wallet data to save. Wallet not created or loaded');
     }
     
-    let key;
-    if (this.#walletData.key instanceof TssKey.TssKey) {
-      key = new TssKey.TssKey(this.#walletData.key.toObj());
-    } else {
-      key = new Key({ seedType: 'object', seedData: this.#walletData.key.toObj() });
-    }
-    if (key.isPrivKeyEncrypted() || key.isKeyChainEncrypted?.()) {
-      const walletPassword = await getPassword('Wallet password:');
-      key.decrypt(walletPassword);
+    let key: TssKey.TssKey | KeyType | undefined;
+    if (!readOnly) {
+      if (this.#walletData.key instanceof TssKey.TssKey) {
+        key = new TssKey.TssKey(this.#walletData.key.toObj());
+      } else {
+        key = new Key({ seedType: 'object', seedData: this.#walletData.key.toObj() });
+      }
+
+      if (key.isPrivKeyEncrypted() || (key as TssKey.TssKey).isKeyChainEncrypted?.()) {
+        const walletPassword = await getPassword('Wallet password:');
+        key.decrypt(walletPassword);
+      }
     }
     
-    let data: any = { key: key.toObj(), credentials: this.#walletData.credentials.toObj() };
+    let data: any = { key: key?.toObj(), credentials: this.#walletData.credentials.toObj() };
     if (exportPassword != null) {
       data = Encryption.encryptWithPassword(data, exportPassword, WALLET_ENCRYPTION_OPTS);
     }
@@ -345,13 +349,15 @@ export class Wallet implements IWallet {
     let data: any = await fs.promises.readFile(filename, 'utf8');
     data = Encryption.decryptWithPassword(data, importPassword);
     data = Utils.jsonParseWithBuffer(data);
-    if (data.key.keychain) {
-      data.key = new TssKey.TssKey(data.key);
-    } else {
-      data.key = new Key({ seedType: 'object', seedData: data.key });
+    if (data.key) { // no data.key means it's a readonly wallet
+      if (data.key.keychain) {
+        data.key = new TssKey.TssKey(data.key);
+      } else {
+        data.key = new Key({ seedType: 'object', seedData: data.key });
+      }
+      const walletPassword = await getPassword('Set a wallet password:', { minLength: 6, hidden: false });
+      data.key.encrypt(walletPassword);
     }
-    const walletPassword = await getPassword('Wallet password:', { minLength: 6, hidden: false });
-    data.key.encrypt(walletPassword);
     this.#walletData = {
       key: data.key,
       credentials: Credentials.fromObj(data.credentials)
@@ -546,7 +552,7 @@ export class Wallet implements IWallet {
         messageHash: Buffer.from(messageHash, 'hex'),
         derivationPath,
         password,
-        id: `${txp.id}:${derivationPath.replace(/\//g, '-')}`,
+        id: `${txp.id}:input${i}`,
         logMessageWaiting: `Signing tx input ${i} (${i + 1}/${inputPaths.length}). Waiting for all parties to join...`,
         logMessageCompleted: `Tx input ${i} complete (${i + 1}/${inputPaths.length})`
       });
