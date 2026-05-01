@@ -240,6 +240,12 @@ export const blockchainExplorerMock = {
       balance: 20000000000 * 5
     });
   },
+  getReserve: (cb) => {
+    return cb(null, undefined); // XRP will default to Defaults.MIN_XRP_BALANCE
+  },
+  getRentMinimum: (space, cb) => {
+    return cb(null, undefined); // SOL will default to Defaults.MIN_SOL_BALANCE
+  },
   getTransactionCount: (addr, cb) => {
     return cb(null, 0);
   },
