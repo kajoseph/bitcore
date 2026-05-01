@@ -211,7 +211,7 @@ export function registerWalletRoutes(router: express.Router, context: RouteConte
     if (res.headersSent) {
       return;
     }
-    return res.json(responses.reduce((all, response) => all.concat(response), []));
+    return res.json(responses.flat());
   });
 
   router.post('/v1/wallets/exist', async (req, res) => {
