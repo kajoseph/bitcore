@@ -270,7 +270,8 @@ export class Wallet implements IWallet {
     if (
       (!this.#walletData.credentials.isComplete() && this.client.credentials.isComplete()) ||
       // For TSS creds, isComplete() may be true even if publicKeyRing isn't fully populated
-      this.#walletData.credentials.publicKeyRing.length < this.client.credentials.publicKeyRing.length
+      this.#walletData.credentials.publicKeyRing.length < this.client.credentials.publicKeyRing.length ||
+      (!this.#walletData.credentials.walletId && this.client.credentials.walletId)
     ) {
       this.#walletData.credentials = this.client.credentials; // update with any new info from the chain
       needsSave = true;
@@ -298,6 +299,7 @@ export class Wallet implements IWallet {
 
         data = Encryption.encryptWithPassword(JSON.stringify(data), password, WALLET_ENCRYPTION_OPTS);
       }
+      console.log(`>>>>>> Saving wallet ${this.name}: ${(data as WalletData).credentials?.walletId}`);
       await this.storage.save(JSON.stringify(data));
       return;
     } catch (err) {

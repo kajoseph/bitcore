@@ -31,7 +31,7 @@ export function startTssWallets(ioHandler: TssTransform, walletNames: string[], 
       throw new Error(`TSS wallet with name ${walletName} already exists`);
     }
     const walletProcess = spawn('node', [CLI_EXEC, walletName, ...walletOptions], CLI_OPTS);
-    walletProcess.stderr.pipe(process.stderr);
+    walletProcess.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
     walletProcess.stdout
       .pipe(new Transform({
         encoding: 'utf-8',

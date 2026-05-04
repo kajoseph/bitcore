@@ -60,7 +60,7 @@ describe('Create', function() {
         }
       });
       const child = spawn('node', [CLI_EXEC, walletName, ...commonOpts], CLI_OPTS);
-      child.stderr.pipe(process.stderr);
+      child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
       child.stdout.pipe(io).pipe(child.stdin);
       io.on('error', (e) => {
         done(e);
@@ -119,7 +119,7 @@ describe('Create', function() {
         }
       });
       const child = spawn('node', [CLI_EXEC, walletName, ...commonOpts], CLI_OPTS);
-      child.stderr.pipe(process.stderr);
+      child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
       child.stdout.pipe(io).pipe(child.stdin);
       io.on('error', (e) => {
         done(e);
@@ -178,7 +178,7 @@ describe('Create', function() {
         }
       });
       const child = spawn('node', [CLI_EXEC, walletName, ...commonOpts], CLI_OPTS);
-      child.stderr.pipe(process.stderr);
+      child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
       child.stdout.pipe(io).pipe(child.stdin);
       io.on('error', (e) => {
         done(e);
@@ -237,7 +237,7 @@ describe('Create', function() {
         }
       });
       const child = spawn('node', [CLI_EXEC, walletName, ...commonOpts], CLI_OPTS);
-      child.stderr.pipe(process.stderr);
+      child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
       child.stdout.pipe(io).pipe(child.stdin);
       io.on('error', (e) => {
         done(e);
@@ -328,7 +328,7 @@ describe('Create', function() {
           }
         });
         const child = spawn('node', [CLI_EXEC, walletName1, ...commonOpts], CLI_OPTS);
-        child.stderr.pipe(process.stderr);
+        child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
         child.stdout.pipe(io).pipe(child.stdin);
         io.on('error', (e) => {
           done(e);
@@ -403,7 +403,7 @@ describe('Create', function() {
           }
         });
         const child = spawn('node', [CLI_EXEC, walletName2, ...commonOpts], CLI_OPTS);
-        child.stderr.pipe(process.stderr);
+        child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
         child.stdout.pipe(io).pipe(child.stdin);
         io.on('error', (e) => {
           done(e);
@@ -500,7 +500,7 @@ describe('Create', function() {
             }
           });
           const child = spawn('node', [CLI_EXEC, walletName, ...commonOpts], CLI_OPTS);
-          child.stderr.pipe(process.stderr);
+          child.stderr.pipe(helpers.filterStderr()).pipe(process.stderr);
           child.stdout.pipe(io).pipe(child.stdin);
           io.on('error', (e) => {
             done(e);
@@ -805,6 +805,7 @@ describe('Create', function() {
               checkpointOutput[walletName] = '';
             }
             // Uncomment to see CLI output during test
+            // walletName === walletName1 && process.stdout.write(chunk);
             // walletName === walletName2 && process.stdout.write(chunk);
             const stepInputs = walletName === walletName1 ? stepInputsC1 : stepInputsC2;
 

@@ -1,6 +1,7 @@
 import sinon from 'sinon';
 import assert from 'assert';
 import fs from 'fs';
+import { Transform } from 'stream';
 import * as CWC from '@bitpay-labs/crypto-wallet-core';
 import BWS from '@bitpay-labs/bitcore-wallet-service';
 import { API, Constants } from '@bitpay-labs/bitcore-wallet-client';
@@ -261,6 +262,18 @@ export function decolor(text: string) {
   text = text?.replace(/\x1b\[[0-9]+m/g, ''); // Remove ANSI color codes
   return text;
 };
+
+export function filterStderr() {
+  return new Transform({
+    transform(chunk, _encoding, callback) {
+      const str = chunk.toString();
+      if (!str.startsWith('Vim: Warning:')) {
+        this.push(chunk);
+      }
+      callback();
+    }
+  });
+}
 
 export function cleanupTempWallets() {
   const { TEMP_DIR } = CONSTANTS.WALLETS;
