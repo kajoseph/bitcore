@@ -189,6 +189,9 @@ PublicKey._transformDER = function(buf, strict) {
  */
 PublicKey._transformX = function(odd, x) {
   $.checkArgument(typeof odd === 'boolean', 'Must specify whether y is odd or not (true or false)');
+  if (Buffer.isBuffer(x)) {
+    x = BN.fromBuffer(x);
+  }
   var info = {};
   info.point = Point.fromX(odd, x);
   return info;
