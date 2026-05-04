@@ -83,9 +83,12 @@ export function registerMaintenanceRoutes(router: express.Router, context: Route
   router.get('/v1/txnotes/', (req, res) => {
     getServerWithAuth(req, res, server => {
       const opts: { minTs?: number } = {};
-      const minTs = +req.query.minTs;
-      if (req.query.minTs && typeof minTs === 'number') {
-        opts.minTs = minTs;
+      const rawMinTs = req.query.minTs;
+      if (typeof rawMinTs === 'string' && rawMinTs.trim() !== '') {
+        const minTs = Number(rawMinTs);
+        if (Number.isFinite(minTs)) {
+          opts.minTs = minTs;
+        }
       }
       server.getTxNotes(opts, (err, notes) => {
         if (err) return returnError(err, res, req);
