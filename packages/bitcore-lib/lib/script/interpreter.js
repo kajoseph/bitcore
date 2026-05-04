@@ -1045,9 +1045,9 @@ Interpreter.verifyTaprootCommitment = function(control, program, tapleafHash) {
 
   try {
     // ! The internal pubkey (x-only, so no Y coordinate parity).
-    const p = PublicKey.fromX(false, control.slice(1, Interpreter.TAPROOT_CONTROL_BASE_SIZE));
+    const p = PublicKey.fromX(false, BN.fromBuffer(control.slice(1, Interpreter.TAPROOT_CONTROL_BASE_SIZE)));
     // ! The output pubkey (taken from the scriptPubKey).
-    const q = PublicKey.fromX(false, program);
+    const q = PublicKey.fromX(false, BN.fromBuffer(program));
     // Compute the Merkle root from the leaf and the provided path.
     const merkleRoot = Interpreter.computeTaprootMerkleRoot(control, tapleafHash);
     // Verify that the output pubkey matches the tweaked internal pubkey, after correcting for parity.
