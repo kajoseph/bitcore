@@ -91,4 +91,22 @@ export function toHex(input: number | string | bigint): string {
   }
 }
 
+export function difference(arr1: any[], arr2: any[]): any[] {
+  arr1 = arr1 || [];
+  arr2 = arr2 || [];
+  const arr2Set = new Set(arr2);
+  return arr1.filter(x => !arr2Set.has(x));
+}
 
+export function isEqual(obj1: object, obj2: object): boolean {
+  if (obj1 === obj2) return true;
+  if (obj1 == null || obj2 == null) return false;
+  for (const key in obj1) {
+    if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
+      if (!isEqual(obj1[key], obj2[key])) return false;
+    } else if (obj1[key] !== obj2[key]) {
+      return false;
+    }
+  }
+  return true;
+}
