@@ -7,13 +7,22 @@ import { getFileName } from '../prompts';
 import { Utils } from '../utils';
 import type { CommonArgs } from '../../types/cli';
 
+enum ViewAction {
+  ACCEPT = 'a',
+  REJECT = 'j',
+  BROADCAST = 'b',
+  DELETE = 'd',
+  TOGGLE_RAW = 'r',
+  EXPORT = 'e'
+}
+
 export function command(args: CommonArgs) {
   const { wallet, program } = args;
   program
     .description('View or perform actions on transaction proposals for a wallet')
     .usage('<walletName> --command txproposals [options]')
     .optionsGroup('Tx Proposals Options')
-    .option('--action <action>', 'Action to perform on transaction proposals: sign, reject, delete, broadcast')
+    .option('--action <action>', `Action to perform on transaction proposals: ${Object.entries(ViewAction).map(([k, v]) => `${k.toLowerCase().replace(v, `(${v})`)}`).join(' | ')}`)
     .option('--proposalId <proposalId>', 'ID of the transaction proposal to act upon')
     .option('--page <page>', 'Page number to view (only 1 proposal is displayed per page)')
     .option('--raw', 'Print raw transaction proposal objects instead of formatted output')
@@ -28,8 +37,17 @@ export function command(args: CommonArgs) {
   if (!!opts.action !== !!opts.proposalId) {
     throw new Error('Both --action and --proposalId options must be provided together.');
   }
-  if (!!opts.proposalId === !!opts.page) {
+  if (opts.proposalId && opts.page) {
     throw new Error('--page option does not make sense with --proposalId.');
+  }
+  if (opts.action) {
+    if (ViewAction[opts.action.toUpperCase()]) {
+      opts.action = ViewAction[opts.action.toUpperCase()] as ViewAction;
+    } else if (Object.values(ViewAction).includes(opts.action.toLowerCase())) {
+      opts.action = opts.action.toLowerCase() as ViewAction;
+    } else {
+      throw new Error(`Invalid action: ${opts.action}`);
+    }
   }
   return opts;
 }
@@ -57,15 +75,6 @@ export async function getTxProposals(
       forAirGapped: false, // TODO
     });
 
-  enum ViewAction {
-    ACCEPT = 'a',
-    REJECT = 'j',
-    BROADCAST = 'b',
-    DELETE = 'd',
-    TOGGLE_RAW = 'r',
-    EXPORT = 'e'
-  }
-
   let lastPage = 1;
   let printRaw = opts.raw ?? false;
   let txp;
@@ -79,7 +88,8 @@ export async function getTxProposals(
       return { result: [] };
     }
 
-    const _txps = page < txps.length ? [txp] : [txp, { /* This element will prevent the paginator from showing Next Page option */}];
+    const _txps = page < txps.length ? [txp] : [txp, {/* This element will prevent the paginator from showing Next Page option */}];
+    action = (opts.action as ViewAction) || action;
 
     if (action === ViewAction.TOGGLE_RAW) {
       printRaw = !printRaw;
@@ -108,10 +118,10 @@ export async function getTxProposals(
 
     } else if (action === ViewAction.BROADCAST) {
       txps[i] = await wallet.client.broadcastTxProposal(txp);
-      if (txps[i].status === 'broadcasted') {
+      txp = txps[i];
+      if (txp.status === 'broadcasted') {
         prompt.log.success(`Broadcasted txid: ${Utils.colorText(txp.txid, 'green')}`);
       }
-      txp = txps[i];
 
     } else if (action === ViewAction.DELETE) {
       const confirmDelete = await prompt.confirm({

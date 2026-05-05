@@ -1,5 +1,6 @@
 import BWC from '@bitpay-labs/bitcore-wallet-client';
 import * as prompt from '@clack/prompts';
+import { UserCancelled } from '../../errors';
 import { getCopayerName, getPassword } from '../../prompts';
 import { Utils } from '../../utils';
 import type { CommonArgs } from '../../../types/cli';
@@ -8,12 +9,15 @@ export async function joinMultiSigWallet(args: CommonArgs<{ mnemonic?: string }>
   const { wallet, opts } = args;
   const { verbose, mnemonic } = opts;
 
-  const joinSecret = (await prompt.text({
+  const joinSecret = await prompt.text({
     message: 'Enter the secret to join the wallet:',
     validate: (input) => input?.trim() ? null : 'Secret cannot be empty.',
-  })).toString().trim();
+  });
+  if (prompt.isCancel(joinSecret)) {
+    throw new UserCancelled();
+  }
   
-  const parsed = BWC.parseSecret(joinSecret);
+  const parsed = BWC.parseSecret(joinSecret.trim());
   const {
     coin: chain,
     network

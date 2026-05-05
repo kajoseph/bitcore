@@ -299,7 +299,6 @@ export class Wallet implements IWallet {
 
         data = Encryption.encryptWithPassword(JSON.stringify(data), password, WALLET_ENCRYPTION_OPTS);
       }
-      console.log(`>>>>>> Saving wallet ${this.name}: ${(data as WalletData).credentials?.walletId}`);
       await this.storage.save(JSON.stringify(data));
       return;
     } catch (err) {
