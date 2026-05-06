@@ -85,10 +85,11 @@ export async function getTxProposals(
 
     if (!txp) {
       prompt.log.info('No more proposals');
-      return { result: [] };
+      return { result: [], hasNextPage: false, hasPrevPage: page > 1 };
     }
 
-    const _txps = page < txps.length ? [txp] : [txp, {/* This element will prevent the paginator from showing Next Page option */}];
+    const hasNextPage = page < txps.length;
+    const hasPrevPage = page > 1;
     action = (opts.action as ViewAction) || action;
 
     if (action === ViewAction.TOGGLE_RAW) {
@@ -234,7 +235,7 @@ export async function getTxProposals(
         { label: 'Export', value: ViewAction.EXPORT, hint: 'Save to a file' },
       ]);
 
-    return { result: _txps, extraChoices };
+    return { result: txps, extraChoices, hasNextPage, hasPrevPage };
   }, {
     pageSize: 1,
     initialPage: opts.page,

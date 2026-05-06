@@ -161,6 +161,8 @@ export class Utils {
       result?: any[];
       /** Extra choices to show in the pagination menu */
       extraChoices?: prompt.Option<string>[];
+      hasNextPage?: boolean;
+      hasPrevPage?: boolean;
     }>,
     opts?: {
       pageSize?: number;
@@ -175,16 +177,21 @@ export class Utils {
     let page = parseInt(initialPage as string) || 1;
     let action: string | symbol;
     do {
-      const { result, extraChoices = [] } = await fn(page, action as string);
+      const {
+        result,
+        extraChoices = [],
+        hasNextPage = result && result.length === pageSize,
+        hasPrevPage = page > 1
+      } = await fn(page, action as string);
       if (!result || (page == 1 && exitOn1Page && result.length < pageSize && !extraChoices.length)) {
         return;
       }
 
 
       const options: prompt.Option<string>[] = [].concat(
-        page > 1 ? [{ label: 'Previous Page', value: 'p' }] : [],
+        hasPrevPage ? [{ label: 'Previous Page', value: 'p' }] : [],
       ).concat(
-        result.length === pageSize ? [{ label: 'Next Page', value: 'n' }] : [],
+        hasNextPage ? [{ label: 'Next Page', value: 'n' }] : [],
       ).concat(
         extraChoices,
       ).concat(
