@@ -87,13 +87,13 @@ describe('Address', function() {
   it('should generate new addresses', function(done) {
     const stepInputs = [
       [KEYSTROKES.ARROW_DOWN], // Proposals -> Send
-      [KEYSTROKES.ARROW_DOWN], // Send -> Recieve
-      [KEYSTROKES.ENTER], // Recieve
+      [KEYSTROKES.ARROW_DOWN], // Send -> Receive
+      [KEYSTROKES.ENTER], // Receive
       // Checkpoint1: Address view shows first generated address (m/0/0)
       [KEYSTROKES.ENTER], // Main Menu -- (checkpoint1)
       [KEYSTROKES.ARROW_DOWN], // Proposals -> Send
-      [KEYSTROKES.ARROW_DOWN], // Send -> Recieve
-      [KEYSTROKES.ENTER], // Recieve
+      [KEYSTROKES.ARROW_DOWN], // Send -> Receive
+      [KEYSTROKES.ENTER], // Receive
       // Checkpoint2: Address view shows second generated address (m/0/1)
       [KEYSTROKES.ENTER], // Main Menu -- (checkpoint2)
       [KEYSTROKES.ARROW_UP], // Proposals -> Exit

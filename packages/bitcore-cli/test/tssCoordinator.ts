@@ -73,18 +73,3 @@ export function startTssWallets(ioHandler: TssTransform, walletNames: string[], 
     tssInstances[walletName] = walletProcess;
   }
 }
-
-export function stopTssWallets(remove = true) {
-  for (const walletName of Object.keys(tssInstances)) {
-    const instance = tssInstances[walletName];
-    instance.kill();
-  }
-
-  if (remove) {
-    deleteTssWallets();
-  }
-}
-
-export function deleteTssWallets() {
-
-}
