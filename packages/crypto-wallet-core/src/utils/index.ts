@@ -101,11 +101,29 @@ export function difference(arr1: any[], arr2: any[]): any[] {
 export function isEqual(obj1: object, obj2: object): boolean {
   if (obj1 === obj2) return true;
   if (obj1 == null || obj2 == null) return false;
-  for (const key in obj1) {
-    if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
-      if (!isEqual(obj1[key], obj2[key])) return false;
-    } else if (obj1[key] !== obj2[key]) {
-      return false;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  const stack = [obj1, obj2];
+  while (stack.length) {
+    const a = stack.pop();
+    const b = stack.pop();
+    if (a === b) continue;
+    if (a == null || b == null) return false;
+    if (typeof a !== 'object' || typeof b !== 'object') return false;
+    if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) return false;
+    if (a instanceof Date) {
+      if (!(b instanceof Date) || a.getTime() !== b.getTime()) return false;
+      continue;
+    }
+    if (a instanceof RegExp) {
+      if (!(b instanceof RegExp) || a.source !== b.source || a.flags !== b.flags) return false;
+      continue;
+    }
+    for (const key in a) {
+      stack.push(a[key], b[key]);
+    }
+    const addtlBKeys = difference(Object.keys(b), Object.keys(a));
+    for (const key of addtlBKeys) {
+      stack.push(a[key], b[key]);
     }
   }
   return true;
