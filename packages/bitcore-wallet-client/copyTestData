@@ -1,3 +1,8 @@
 #!/bin/sh
 
+if [ ! -d "ts_build/test/data" ]; then
+  echo "ts_build/test/data directory does not exist. Please run 'npm run build/compile' first."
+  exit 1;
+fi
+
 cp test/data/*.json ts_build/test/data/
