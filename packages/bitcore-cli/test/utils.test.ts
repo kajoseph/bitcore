@@ -203,6 +203,7 @@ describe('Utils', function() {
 
     beforeEach(function() {
       exitStub = sandbox.stub(process, 'exit');
+      exitStub.throws(new Error('process.exit called')); // prevent actual exit but halt execution of parseAmount
     });
 
     it('should parse sat amount', function() {

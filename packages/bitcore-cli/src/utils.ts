@@ -100,7 +100,7 @@ export class Utils {
 
     if (!match || match.length === 0) {
       // Die since this is likely a system error
-      throw Utils.die('Invalid amount: ' + text);
+      Utils.die('Invalid amount: ' + text);
     }
 
     const amount = parseFloat(match[1]);
