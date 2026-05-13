@@ -45,16 +45,57 @@ export async function createThresholdSigWallet(
   
   const tssPassword = crypto.randomBytes(20).toString('hex');
   await tss.newKey({ m, n, password: tssPassword });
-  
+
+  // Show TSS setup instructions on first iteration
+  if (n > 1) {
+    prompt.note([
+      'Threshold Signature Scheme (TSS) key generation requires coordination',
+      'between all parties via the Bitcore Wallet Service (BWS).',
+      '',
+      'How TSS wallet creation works:',
+      '  1. Each party runs their own wallet process (separate terminal/window)',
+      '  2. The initiator (you) starts the key generation session on BWS',
+      '  3. Each joining party generates their own auth key with BWS',
+      '  4. You paste the joining party\'s auth key below to generate a join code',
+      '  5. The joining party uses that join code to connect and participate',
+      '  6. Both parties subscribe simultaneously — rounds happen on BWS',
+      '',
+      'Before proceeding, have the joining party start their wallet:',
+      '  wallet <walletName>',
+      '  → select "Join Wallet" → choose "TSS" → enter network/copayer/password',
+      '  → they will see their auth public key displayed',
+      '  → copy that key and paste it below',
+      '',
+      'If you need help, type "help" to see these instructions again.',
+    ].join(os.EOL), 'TSS Wallet Creation Guide');
+  }
+
   for (let i = 1; i < n; i++) {
     const pubkey = await prompt.text({
-      message: `Enter party ${i}'s public key:`,
-      validate: (input) => input ? undefined : 'Public key cannot be empty.',
+      message: `Enter party ${i}'s auth public key:`,
+      placeholder: `Paste party ${i}'s key here (or type "help" for setup instructions)`,
+      validate: (input) => {
+        if (!input || input.trim() === '') return 'Public key cannot be empty.';
+        if (input.toLowerCase() === 'help') {
+          return [
+            'TSS requires coordination between parties. Each joining party must:',
+            '  1. Run their wallet: wallet <walletName>',
+            '  2. Select "Join Wallet" → choose "TSS" → enter network, copayer name, password',
+            '  3. They will see: "Give the following public key to the session leader: <KEY>"',
+            '  4. Copy that key and paste it here',
+            '',
+            'Then the initiator generates a join code (shown below) and gives it to',
+            'the joining party. The joining party enters the join code in their wallet.',
+            'Both parties must stay connected while TSS rounds complete.',
+          ].join(os.EOL);
+        }
+        return undefined;
+      },
     });
     if (prompt.isCancel(pubkey)) {
       throw new UserCancelled();
     }
-    
+
     const joinCode = await tss.createJoinCode({
       partyId: i,
       partyPubKey: pubkey,
@@ -66,7 +107,7 @@ export async function createThresholdSigWallet(
       initialValue: false,
       options: [
         {
-          label: 'Continue →',
+          label: 'Give to party ' + i + ' → Continue →',
           value: false
         },
         {

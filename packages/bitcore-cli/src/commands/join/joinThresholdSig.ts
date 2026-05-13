@@ -32,10 +32,31 @@ export async function joinThresholdSigWallet(
     password
   });
   
+  // Step 1: Show the joining party their auth public key
+  // This key must be shared with the session leader so they can create a join code
+  // for this specific party (the join code is encrypted with this key)
   const authPubKey = tss.getAuthPublicKey();
+
+  prompt.intro('TSS Join Setup');
+  prompt.note([
+    'Your authentication public key is generated below.',
+    '',
+    'Share this key with the session leader (the person who created',
+    'the TSS wallet session). They will use it to generate a join',
+    'code that only you can use to join.',
+    '',
+    'Workflow:',
+    '  1. Copy the key below',
+    '  2. Share it with the session leader (via chat, etc.)',
+    '  3. The session leader will give you a join code',
+    '  4. Paste the join code below and press Enter',
+    '  5. Both you and the session leader must keep your terminals',
+    '     open while TSS rounds complete on the server.',
+  ].join(os.EOL), 'TSS Join Instructions');
+
   const done = await prompt.select({
-    message: `Give the following public key to the session leader:${os.EOL}${Utils.colorText(authPubKey, 'blue')}`,
-    options: [{ label: 'Done', value: true, hint: 'Hit Enter/Return to continue' }]
+    message: `Your auth public key:${os.EOL}${Utils.colorText(authPubKey, 'blue')}`,
+    options: [{ label: 'I have shared this key with the session leader → Continue →', value: true }]
   });
   if (prompt.isCancel(done)) {
     throw new UserCancelled();
@@ -43,6 +64,7 @@ export async function joinThresholdSigWallet(
 
   const joinCode = await prompt.text({
     message: 'Enter the join code from the session leader:',
+    placeholder: 'Paste the join code received from the session leader',
     validate: (code) => {
       try {
         const decryptedJoinCode = tss.checkJoinCode({ code });
