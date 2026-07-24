@@ -592,6 +592,8 @@ export class Wallet implements IWallet {
       throw new Error('TSS wallets do not yet support Solana.');
     }
 
+    const stateStoragePath = await this.storage.getStatePath();
+
     const sigs: string[] = [];
 
     const inputPaths = !isUtxo && !txp.inputPaths?.length ? ['m/0/0'] : txp.inputPaths;
@@ -616,6 +618,7 @@ export class Wallet implements IWallet {
         host: this.host,
         chain: txp.chain,
         walletData: this.#walletData,
+        stateStoragePath,
         messageHash: Buffer.from(messageHash, 'hex'),
         derivationPath,
         password,
@@ -691,10 +694,13 @@ export class Wallet implements IWallet {
       throw new Error('TSS signing is only supported for TSS wallets.');
     }
 
+    const stateStoragePath = await this.storage.getStatePath();
+
     const sig = await tssSign({
       host: this.host,
       chain: this.client.credentials.chain,
       walletData: this.#walletData,
+      stateStoragePath,
       messageHash,
       derivationPath,
       password

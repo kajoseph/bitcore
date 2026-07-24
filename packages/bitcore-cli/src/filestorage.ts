@@ -35,4 +35,12 @@ export class FileStorage {
   exists() {
     return fs.existsSync(this.filename);
   }
+
+  async getStatePath() {
+    const walletName = path.basename(this.filename, path.extname(this.filename));
+    const statePath = path.join(path.dirname(this.filename), '.state', walletName);
+    // Ensure state directory exists
+    await fs.promises.mkdir(statePath, { recursive: true });
+    return statePath;
+  }
 };

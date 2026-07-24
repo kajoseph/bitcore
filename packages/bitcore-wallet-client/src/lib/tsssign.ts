@@ -162,13 +162,24 @@ export class TssSign extends EventEmitter {
      * Session string to restore
      */
     session: string;
+    /**
+     * Password to decrypt the TSS private key share.
+     * Only needed if
+     *  a) you're restoring a cold session (i.e. instantiating a new TssSig instance), and
+     *  b) the TSS private key share is encrypted
+     */
+    password?: string;
   }): Promise<TssSign> {
-    const { session } = params;
-    const [id, sigSession] = session.split(':');
+    const { session, password } = params;
+    $.checkArgument(password || this.#tssKey.keychain.privateKeyShare, 'password is required to decrypt the TSS private key share');
+
+    const parts = session.split(':');
+    const id = parts.slice(0, -1).join(':');
+    const sigSession = parts[parts.length - 1];
     this.id = id;
     this.#sign = await ECDSA.Sign.restore({
       session: sigSession,
-      keychain: this.#tssKey.keychain,
+      keychain: this.#tssKey.get(password).keychain,
       authKey: this.#credentials.requestPrivKey
     });
     return this;
@@ -266,9 +277,8 @@ export class TssSign extends EventEmitter {
   }
 
   /**
-   * Unsubscribe from the TSS key generation process
-   * @param {object} [params]
-   * @param {boolean} [params.clearEvents] Whether to remove all event listeners (default: true)
+   * Unsubscribe from the TSS key generation process.
+   * Calling this method will emit the 'unsubscribe' event.
    */
   unsubscribe(params: {
     /**
@@ -285,6 +295,7 @@ export class TssSign extends EventEmitter {
     this.#subscriptionId = null;
     this.#subscriptionRunning = false;
     this.#emittedParticipants = null;
+    this.emit('unsubscribe');
   }
 
   /**

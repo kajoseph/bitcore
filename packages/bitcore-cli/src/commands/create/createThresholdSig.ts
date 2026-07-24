@@ -115,16 +115,10 @@ export async function createThresholdSigWallet(
     } while (joinCodeAction !== 'continue');
   }
 
-  const spinner = prompt.spinner({ indicator: 'timer' });
+  const spinner = prompt.spinner({ indicator: 'timer', onCancel: () => { tss.unsubscribe(); } });
   spinner.start('Waiting for all parties to join...');
 
   await new Promise<void>((resolve, reject) => {
-    process.on('SIGINT', () => {
-      tss.unsubscribe();
-      spinner.stop('Cancelled by user');
-      reject(new UserCancelled());
-    });
-
     tss.subscribe({
       walletName: wallet.name,
       copayerName,
@@ -160,6 +154,9 @@ export async function createThresholdSigWallet(
       } catch (err) {
         reject(err);
       }
+    });
+    tss.on('unsubscribe', () => {
+      reject(new UserCancelled());
     });
   });
 

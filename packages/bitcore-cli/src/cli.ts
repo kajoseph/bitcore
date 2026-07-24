@@ -214,8 +214,9 @@ if (require.main === module) {
                   // ...update status
                   cmdParams.status = await wallet.client.getStatus({ tokenAddress: tokenObj?.contractAddress });
                 }
-                cmdParams.opts.tokenAddress = tokenObj?.contractAddress;
-                cmdParams.opts.token = tokenObj?.displayCode;
+                // Update persistent opts (cmdParams.opts gets reset to opts since is susceptible to being overwritten in other commands)
+                opts.tokenAddress = tokenObj?.contractAddress;
+                opts.token = tokenObj?.displayCode;
                 break;
               case 'address':
                 await commands.address.createAddress(cmdParams);

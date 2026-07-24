@@ -610,6 +610,7 @@ export class TssKeyGen extends EventEmitter {
 
   /**
    * Unsubscribe from the TSS key generation process
+   * Calling this method will emit the 'unsubscribe' event.
    */
   unsubscribe(params: {
     /**
@@ -625,6 +626,7 @@ export class TssKeyGen extends EventEmitter {
     }
     this.#subscriptionId = null;
     this.#subscriptionRunning = false;
+    this.emit('unsubscribe');
   }
 
   /**
