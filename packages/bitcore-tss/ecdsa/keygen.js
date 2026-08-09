@@ -1,11 +1,11 @@
-const { DklsDkg, DklsTypes } = require('@bitgo/sdk-lib-mpc');
-const bitcoreLib = require('@bitpay-labs/bitcore-lib');
-const { DklsComms } = require('./dklsComms');
-const { encrypt, decrypt } = require('./utils');
+import { DklsDkg, DklsTypes } from '@bitgo/sdk-lib-mpc';
+import bitcoreLib from '@bitpay-labs/bitcore-lib';
+import { DklsComms } from './dklsComms.js';
+import { decrypt, encrypt } from './utils.js';
 
 const $ = bitcoreLib.util.preconditions;
 
-class KeyGen {
+export class KeyGen {
   #partySize;
   #minSigners;
   #partyId;
@@ -213,5 +213,3 @@ class KeyGen {
     this.#round = -1;
   }
 };
-
-module.exports.KeyGen = KeyGen;

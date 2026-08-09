@@ -12,7 +12,7 @@
     "removeComments": true,
     "declaration": true,
     "declarationMap": true,
-    "module": "commonjs",
+    "module": "esnext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,

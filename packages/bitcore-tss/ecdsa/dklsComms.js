@@ -1,5 +1,5 @@
-const { DklsComms: MpcDklsComms } = require('@bitgo/sdk-lib-mpc');
-const utils = require('./utils');
+import { DklsComms as MpcDklsComms } from '@bitgo/sdk-lib-mpc';
+import * as utils from './utils.js';
 
 const _DklsComms = {};
 
@@ -72,4 +72,4 @@ _DklsComms.decryptAndVerifyIncomingMessages = function decryptAndVerifyIncomingM
   };
 };
 
-module.exports.DklsComms = Object.assign({}, MpcDklsComms, _DklsComms);
+export const DklsComms = Object.assign({}, MpcDklsComms, _DklsComms);

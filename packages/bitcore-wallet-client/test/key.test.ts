@@ -2,7 +2,7 @@
 
 import * as chai from 'chai';
 import sjcl from 'sjcl';
-import { Key } from '../src/lib/key';
+import { Key } from '../src/lib/key.js';
 
 const should = chai.should();
 

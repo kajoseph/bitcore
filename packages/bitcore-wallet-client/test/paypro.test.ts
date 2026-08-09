@@ -3,8 +3,8 @@
 import * as chai from 'chai';
 import sinon from 'sinon';
 import crypto from 'crypto';
-import { PayPro } from '../src/lib/paypro';
-import * as TestData from './data/testdata';
+import { PayPro } from '../src/lib/paypro.js';
+import * as TestData from './data/testdata.js';
 
 const should = chai.should();
 

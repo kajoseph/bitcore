@@ -2,7 +2,7 @@
 
 import * as chai from 'chai';
 import { BitcoreLib as Bitcore } from '@bitpay-labs/crypto-wallet-core';
-import { Utils } from '../src/lib/common';
+import { Utils } from '../src/lib/common/index.js';
 import sjcl from 'sjcl';
 
 const should = chai.should();

@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 import { ECDSA } from '@bitpay-labs/bitcore-tss';
 import { BitcoreLib } from '@bitpay-labs/crypto-wallet-core';
-import { Credentials } from './credentials';
-import { Request, RequestResponse } from './request';
-import { type TssExportedKey, TssKey } from './tsskey';
+import { Credentials } from './credentials.js';
+import { Request, RequestResponse } from './request.js';
+import { type TssExportedKey, TssKey } from './tsskey.js';
 
 const $ = BitcoreLib.util.preconditions;
 

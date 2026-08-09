@@ -1,12 +1,12 @@
-const { DklsDsg, DklsTypes, DklsUtils } = require('@bitgo/sdk-lib-mpc');
-const bitcoreLib = require('@bitpay-labs/bitcore-lib');
-const { DklsComms } = require('./dklsComms');
-const { encrypt, decrypt } = require('./utils');
+import { DklsDsg, DklsTypes, DklsUtils } from '@bitgo/sdk-lib-mpc';
+import bitcoreLib from '@bitpay-labs/bitcore-lib';
+import { DklsComms } from './dklsComms.js';
+import { decrypt, encrypt } from './utils.js';
 
 const $ = bitcoreLib.util.preconditions;
 const jsUtil = bitcoreLib.util.js;
 
-class Sign {
+export class Sign {
   #keychain;
   #partyId;
   #partySize;
@@ -230,5 +230,3 @@ class Sign {
     return this.#signature;
   }
 };
-
-module.exports.Sign = Sign;

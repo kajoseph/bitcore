@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import sinon from 'sinon';
 import sjcl from 'sjcl';
-import { Encryption } from '../src/lib/common/encryption';
+import { Encryption } from '../src/lib/common/encryption.js';
 
 const should = chai.should();
 

@@ -5,22 +5,22 @@ import querystring from 'querystring';
 import Mnemonic from '@bitpay-labs/bitcore-mnemonic';
 import * as CWC from '@bitpay-labs/crypto-wallet-core';
 import Bip38 from 'bip38';
-import { singleton } from 'preconditions';
+import Preconditions from 'preconditions';
 import * as Uuid from 'uuid';
-import { BulkClient } from './bulkclient';
-import { Constants, Encryption, Utils } from './common';
-import { Credentials } from './credentials';
-import { Errors } from './errors';
-import { Key, PasswordMaybe } from './key';
-import log from './log';
-import { PayPro } from './paypro';
-import { PayProV2 } from './payproV2';
-import { Request } from './request';
-import { Verifier } from './verifier';
-import type { Address } from '../types/address';
-import type { ServerAssistedImportEvents } from '../types/serverAssistedImportEvents';
+import { BulkClient } from './bulkclient.js';
+import { Constants, Encryption, Utils } from './common/index.js';
+import { Credentials } from './credentials.js';
+import { Errors } from './errors/index.js';
+import { Key, PasswordMaybe } from './key.js';
+import log from './log.js';
+import { PayPro } from './paypro.js';
+import { PayProV2 } from './payproV2.js';
+import { Request } from './request.js';
+import { Verifier } from './verifier.js';
+import type { Address } from '../types/address.js';
+import type { ServerAssistedImportEvents } from '../types/serverAssistedImportEvents.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 const Bitcore = CWC.BitcoreLib;
 const Bitcore_ = {

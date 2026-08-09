@@ -1,7 +1,7 @@
 'use strict';
 
-import { PayProV2 } from '../src/lib/payproV2';
-import * as TestData from './data/testdata';
+import { PayProV2 } from '../src/lib/payproV2.js';
+import * as TestData from './data/testdata.js';
 
 describe('PayProV2', () => {
   let oldreq;

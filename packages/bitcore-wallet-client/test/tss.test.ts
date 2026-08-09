@@ -2,24 +2,27 @@
 
 import sinon from 'sinon';
 import * as chai from 'chai';
-import BWS from '@bitpay-labs/bitcore-wallet-service';
+import { BWS } from '@bitpay-labs/bitcore-wallet-service';
 import request from 'supertest';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import url from 'url';
 import { ECIES } from '@bitpay-labs/bitcore-tss';
-import { Request } from '../src/lib/request';
+import { Request } from '../src/lib/request.js';
 import { BitcoreLib, Deriver } from '@bitpay-labs/crypto-wallet-core';
-import { TssKeyGen, TssKey } from '../src/lib/tsskey';
-import { TssSign } from '../src/lib/tsssign';
-import log from '../src/lib/log';
-import Client from '../src';
+import { TssKeyGen, TssKey } from '../src/lib/tsskey.js';
+import { TssSign } from '../src/lib/tsssign.js';
+import log from '../src/lib/log.js';
+import Client from '../src/index.js';
 import {
   helpers,
   blockchainExplorerMock
-} from './helpers';
+} from './helpers.js';
 
 const should = chai.should();
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const datadir = path.join(__dirname, 'data');
 const Key = Client.Key;
 

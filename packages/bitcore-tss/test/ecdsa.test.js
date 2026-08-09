@@ -1,10 +1,10 @@
-// const { describe, it } = require('node:test');
-const assert = require('assert');
-const CWC = require('@bitpay-labs/crypto-wallet-core');
-const bitcoreLib = require('@bitpay-labs/bitcore-lib');
-const { KeyGen } = require('../ecdsa/keygen');
-const { Sign } = require('../ecdsa/sign');
-const { vectors } = require('./data/vectors.ecdsa');
+// import { describe, it } from 'node:test';
+import assert from 'assert';
+import CWC from '@bitpay-labs/crypto-wallet-core';
+import bitcoreLib from '@bitpay-labs/bitcore-lib';
+import { KeyGen } from '../ecdsa/keygen.js';
+import { Sign } from '../ecdsa/sign.js';
+import { vectors } from './data/vectors.ecdsa.js';
 
 
 describe('ECDSA', function() {

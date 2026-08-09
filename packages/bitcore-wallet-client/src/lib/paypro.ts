@@ -1,11 +1,11 @@
 import URL from 'url';
 import { BitcoreLib, BitcoreLibCash } from '@bitpay-labs/crypto-wallet-core';
-import { singleton } from 'preconditions';
+import Preconditions from 'preconditions';
 import superagent from 'superagent';
-import dfltTrustedKeys from '../util/JsonPaymentProtocolKeys';
-import { Errors } from './errors';
+import dfltTrustedKeys from '../util/JsonPaymentProtocolKeys.js';
+import { Errors } from './errors/index.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 const Bitcore = BitcoreLib;
 const Bitcore_ = {

@@ -6,14 +6,14 @@ import {
   Deriver,
   Transactions
 } from '@bitpay-labs/crypto-wallet-core';
-import { singleton } from 'preconditions';
+import Preconditions from 'preconditions';
 import * as Uuid from 'uuid';
-import { Constants, Encryption, Utils } from './common';
-import { Credentials } from './credentials';
-import { Errors } from './errors';
-import log from './log';
+import { Constants, Encryption, Utils } from './common/index.js';
+import { Credentials } from './credentials.js';
+import { Errors } from './errors/index.js';
+import log from './log.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 type Language = 'en' | 'es' | 'ja' | 'zh' | 'fr' | 'it';
 const wordsForLang: Record<Language, Array<string>> = {

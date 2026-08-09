@@ -2,7 +2,7 @@
 
 import * as chai from 'chai';
 import sinon from 'sinon';
-import log from '../src/lib/log';
+import log from '../src/lib/log.js';
 
 const should = chai.should();
 

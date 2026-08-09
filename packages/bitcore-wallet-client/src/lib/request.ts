@@ -1,10 +1,10 @@
 import util from 'util';
 import request from 'superagent';
-import Package from '../../package.json';
-import { Utils } from './common';
-import { Credentials } from './credentials';
-import { Errors } from './errors';
-import log from './log';
+import Package from '../../package.json' with { type: 'json' };
+import { Utils } from './common/index.js';
+import { Credentials } from './credentials.js';
+import { Errors } from './errors/index.js';
+import log from './log.js';
 
 interface Headers {
   'x-client-version': string;

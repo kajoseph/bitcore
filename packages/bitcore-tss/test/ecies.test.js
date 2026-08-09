@@ -1,9 +1,9 @@
 'use strict';
 
-// const { describe, it } = require('node:test');
-const assert = require('assert');
-const bitcore = require('@bitpay-labs/bitcore-lib');
-const ECIES = require('../ecies/ecies');
+// import { describe, it } from 'node:test';
+import assert from 'assert';
+import bitcore from '@bitpay-labs/bitcore-lib';
+import * as ECIES from '../ecies/ecies.js';
 
 const PrivateKey = bitcore.PrivateKey;
 

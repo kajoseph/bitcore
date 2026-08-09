@@ -4,7 +4,7 @@ import { setDefaultResultOrder } from 'dns';
 
 setDefaultResultOrder('ipv4first');
 
-import { singleton } from 'preconditions';
+import Preconditions from 'preconditions';
 import * as chai from 'chai';
 
 chai.config.includeStack = true;
@@ -12,11 +12,11 @@ import sinon from 'sinon';
 import request from 'supertest';
 import mongodb from 'mongodb';
 import * as CWC from '@bitpay-labs/crypto-wallet-core';
-import config from './data/test-config';
-import Client from '../src';
-import { Utils, Constants } from '../src/lib/common';
+import config from './data/test-config.js';
+import Client from '../src/index.js';
+import { Utils, Constants } from '../src/lib/common/index.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 const should = chai.should();
 
 

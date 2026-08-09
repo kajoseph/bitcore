@@ -1,10 +1,10 @@
 'use strict';
 
 import { BitcoreLib as Bitcore } from '@bitpay-labs/crypto-wallet-core';
-import { singleton } from 'preconditions';
-import { Constants, Utils } from './common';
+import Preconditions from 'preconditions';
+import { Constants, Utils } from './common/index.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 export class Credentials {
   static FIELDS = [

@@ -9,12 +9,12 @@ import {
   Transactions
 } from '@bitpay-labs/crypto-wallet-core';
 import Stringify from 'json-stable-stringify';
-import { singleton } from 'preconditions';
-import { Constants } from './constants';
-import { Defaults } from './defaults';
-import { Encryption } from './encryption';
+import Preconditions from 'preconditions';
+import { Constants } from './constants.js';
+import { Defaults } from './defaults.js';
+import { Encryption } from './encryption.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 const Bitcore_ = {
   btc: BitcoreLib,

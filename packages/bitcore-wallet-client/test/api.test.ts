@@ -1,22 +1,22 @@
 'use strict';
 
 import * as chai from 'chai';
-import 'chai/register-should';
+import 'chai/register-should.js';
 
 chai.config.includeStack = true;
 import sinon from 'sinon';
 import async from 'async';
 import * as Uuid from 'uuid';
-import log from '../src/lib/log';
-import oldCredentials from './data/legacyCredentialsExports';
+import log from '../src/lib/log.js';
+import oldCredentials from './data/legacyCredentialsExports.js';
 import * as CWC from '@bitpay-labs/crypto-wallet-core';
-import BWS from '@bitpay-labs/bitcore-wallet-service';
-import Client, { Credentials } from '../src';
-import { Request } from '../src/lib/request';
-import { Utils } from '../src/lib/common';
-import * as TestData from './data/testdata';
-import { Errors } from '../src/lib/errors';
-import { helpers, blockchainExplorerMock } from './helpers';
+import { BWS } from '@bitpay-labs/bitcore-wallet-service';
+import Client, { Credentials } from '../src/index.js';
+import { Request } from '../src/lib/request.js';
+import { Utils } from '../src/lib/common/index.js';
+import * as TestData from './data/testdata.js';
+import { Errors } from '../src/lib/errors/index.js';
+import { helpers, blockchainExplorerMock } from './helpers.js';
 
 const should = chai.should();
 

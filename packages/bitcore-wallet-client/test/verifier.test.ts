@@ -1,8 +1,8 @@
 'use strict';
 
-import chai from 'chai';
-import { Verifier } from '../src/lib/verifier';
-import { Key } from '../src/lib/key';
+import * as chai from 'chai';
+import { Verifier } from '../src/lib/verifier.js';
+import { Key } from '../src/lib/key.js';
 
 chai.should();
 

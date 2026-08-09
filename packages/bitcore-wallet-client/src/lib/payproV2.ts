@@ -4,8 +4,8 @@ import query from 'querystring';
 import url from 'url';
 import { BitcoreLib as Bitcore } from '@bitpay-labs/crypto-wallet-core';
 import superagent from 'superagent';
-import dfltTrustedKeys from '../util/JsonPaymentProtocolKeys';
-import { Errors } from './errors';
+import dfltTrustedKeys from '../util/JsonPaymentProtocolKeys.js';
+import { Errors } from './errors/index.js';
 
 const sha256 = Bitcore.crypto.Hash.sha256;
 const BN = Bitcore.crypto.BN;

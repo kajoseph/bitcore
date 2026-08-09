@@ -1,7 +1,7 @@
 'use strict';
 
 import * as chai from 'chai';
-import BWC, * as bwc from '../src/index';
+import BWC, * as bwc from '../src/index.js';
 
 const should = chai.should();
 
@@ -98,17 +98,19 @@ describe('index exports', function () {
   describe('TssKey namespace export', function () {
     it('should export TssKey namespace', function () {
       should.exist(bwc.TssKey);
-      bwc.TssKey.should.be.an('object');
+      Object.isSealed(bwc.TssKey).should.equal(true);
     });
 
     it('should expose TssKey class in namespace', function () {
       should.exist(bwc.TssKey.TssKey);
       bwc.TssKey.TssKey.should.be.a('function');
+      bwc.TssKey.TssKey.constructor.should.be.a('function');
     });
 
     it('should expose TssKeyGen class in namespace', function () {
       should.exist(bwc.TssKey.TssKeyGen);
       bwc.TssKey.TssKeyGen.should.be.a('function');
+      bwc.TssKey.TssKeyGen.constructor.should.be.a('function');
     });
   });
 
@@ -116,12 +118,13 @@ describe('index exports', function () {
   describe('TssSign namespace export', function () {
     it('should export TssSign namespace', function () {
       should.exist(bwc.TssSign);
-      bwc.TssSign.should.be.an('object');
+      Object.isSealed(bwc.TssSign).should.equal(true);
     });
 
     it('should expose TssSign class in namespace', function () {
       should.exist(bwc.TssSign.TssSign);
       bwc.TssSign.TssSign.should.be.a('function');
+      bwc.TssSign.TssSign.constructor.should.be.a('function');
     });
   });
 

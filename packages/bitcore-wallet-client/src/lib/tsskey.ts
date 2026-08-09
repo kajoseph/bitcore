@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
 import { ECDSA, ECIES } from '@bitpay-labs/bitcore-tss';
 import { BitcoreLib } from '@bitpay-labs/crypto-wallet-core';
-import { API as Client, CreateWalletOpts } from './api';
-import { Encryption } from './common';
-import { Credentials } from './credentials';
-import { ExportedKey, Key, KeyAlgorithm, PasswordMaybe } from './key';
-import { Request, RequestResponse } from './request';
+import { API as Client, CreateWalletOpts } from './api.js';
+import { Encryption } from './common/index.js';
+import { Credentials } from './credentials.js';
+import { ExportedKey, Key, KeyAlgorithm, PasswordMaybe } from './key.js';
+import { Request, RequestResponse } from './request.js';
 
 const $ = BitcoreLib.util.preconditions;
 

@@ -4,11 +4,11 @@ import * as chai from 'chai';
 
 chai.config.includeStack = true;
 import sinon from 'sinon';
-import BWS from '@bitpay-labs/bitcore-wallet-service';
-import log from '../src/lib/log';
-import Client from '../src';
-import { helpers, blockchainExplorerMock } from './helpers';
-import { Utils } from '../src/lib/common/utils';
+import { BWS } from '@bitpay-labs/bitcore-wallet-service';
+import log from '../src/lib/log.js';
+import Client from '../src/index.js';
+import { helpers, blockchainExplorerMock } from './helpers.js';
+import { Utils } from '../src/lib/common/utils.js';
 
 const should = chai.should();
 const Key = Client.Key;

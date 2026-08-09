@@ -1,8 +1,8 @@
 'use strict';
 
 // eslint-disable-next-line no-redeclare
-const crypto = require('crypto');
-const bitcore = require('@bitpay-labs/bitcore-lib');
+import crypto from 'crypto';
+import bitcore from '@bitpay-labs/bitcore-lib';
 
 const PublicKey = bitcore.PublicKey;
 const PrivateKey = bitcore.PrivateKey;
@@ -12,7 +12,7 @@ const $ = bitcore.util.preconditions;
 
 // http://en.wikipedia.org/wiki/Integrated_Encryption_Scheme
 
-function KDF(privateKey, publicKey, isDecrypt) {
+export function KDF(privateKey, publicKey, isDecrypt) {
   const r = privateKey.bn;
   const KB = publicKey.point;
   const P = KB.mul(r);
@@ -47,7 +47,7 @@ function KDF(privateKey, publicKey, isDecrypt) {
  *                    with `ivbuf`, or use a salt inside the message.
  * @returns {Buffer} Payload buffer with `pubkey|iv|ciphertext|tag` (pubkey is excluded if `noKey` is given).
  */
-function encrypt({ message, publicKey, privateKey, ivbuf, opts = {} }) {
+export function encrypt({ message, publicKey, privateKey, ivbuf, opts = {} }) {
   $.checkArgument(message, 'message is required');
   $.checkArgument(publicKey, 'publicKey is required');
   $.checkArgument(privateKey, 'privateKey is required');
@@ -96,7 +96,7 @@ function encrypt({ message, publicKey, privateKey, ivbuf, opts = {} }) {
  *                              *Only* include this if the encrypter specified the `noKey` option, otherwise the public key is included in the payload.
  * @returns {Buffer} Decrypted message buffer.
  */
-function decrypt({ payload, privateKey, publicKey }) {
+export function decrypt({ payload, privateKey, publicKey }) {
   $.checkArgument(Buffer.isBuffer(payload), 'payload must be a Buffer');
   $.checkArgument(privateKey, 'privateKey is required');
   
@@ -142,7 +142,3 @@ function decrypt({ payload, privateKey, publicKey }) {
   const message = Buffer.concat([cipher.update(cipherText), cipher.final()]);
   return message;
 };
-
-module.exports.KDF = KDF;
-module.exports.encrypt = encrypt;
-module.exports.decrypt = decrypt;

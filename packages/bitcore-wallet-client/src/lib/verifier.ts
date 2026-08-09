@@ -3,13 +3,13 @@ import {
   BitcoreLibCash,
   Utils as CWCUtils
 } from '@bitpay-labs/crypto-wallet-core';
-import { singleton } from 'preconditions';
-import { Constants, Utils } from './common';
-import { Credentials } from './credentials';
-import log from './log';
-import type { Address } from '../types/address';
+import Preconditions from 'preconditions';
+import { Constants, Utils } from './common/index.js';
+import { Credentials } from './credentials.js';
+import log from './log.js';
+import type { Address } from '../types/address.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 const BCHAddress = BitcoreLibCash.Address;
 
 /**

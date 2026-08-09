@@ -1,13 +1,13 @@
 'use strict';
 
-import { singleton } from 'preconditions';
-import { API, Status } from './api';
-import { Utils } from './common';
-import { Credentials } from './credentials';
-import log from './log';
-import { Request } from './request';
+import Preconditions from 'preconditions';
+import { API, Status } from './api.js';
+import { Utils } from './common/index.js';
+import { Credentials } from './credentials.js';
+import log from './log.js';
+import { Request } from './request.js';
 
-const $ = singleton();
+const $ = Preconditions.singleton();
 
 export class BulkClient extends Request<Array<Credentials>> {
 

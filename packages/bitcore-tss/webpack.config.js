@@ -1,7 +1,18 @@
-const fs = require('fs');
-const path = require('path');
-const webpack = require('webpack');
-// const TerserPlugin = require('terser-webpack-plugin');
+import fs from 'fs';
+import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import webpack from 'webpack';
+
+// import TerserPlugin from 'terser-webpack-plugin';
+
+
+// eslint-disable-next-line no-redeclare
+const require = createRequire(import.meta.url);
+// eslint-disable-next-line no-redeclare
+const __filename = fileURLToPath(import.meta.url);
+// eslint-disable-next-line no-redeclare
+const __dirname = path.dirname(__filename);
 
 const testFiles = fs.readdirSync('./test', {
   recursive: true,
@@ -13,7 +24,7 @@ for (const file of testFiles) {
   entry[file.name.replace('.test.js', '')] = './' + path.join(file.path, file.name); 
 }
 
-module.exports = {
+export default {
   mode: 'development',
   devServer: {
     headers: {
