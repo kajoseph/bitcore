@@ -577,15 +577,16 @@ export const Utils = {
 
   convertXPubKeyForNetwork(xPubKey: string, chain: string, network: string) {
     const lib = Bitcore_[chain] || BitcoreLib;
-    const hdPubKey = lib.HDPublicKey(xPubKey);
-    const newHdPubKey = new BitcoreLib.HDPublicKey({
-      network: BitcoreLib.Networks.get(network),
-      depth: hdPubKey.depth,
-      parentFingerPrint: hdPubKey.parentFingerPrint,
-      childIndex: hdPubKey.childIndex,
-      chainCode: hdPubKey.chainCode,
-      publicKey: hdPubKey.publicKey
-    });
-    return newHdPubKey.toString();
+    // An HDPublicKey instance exposes only depth/publicKey/fingerPrint directly; parentFingerPrint,
+    // childIndex and chainCode live in its private buffers and are reachable only through toObject().
+    // Reading them off the instance yields undefined and makes the HDPublicKey constructor assert, so
+    // round-trip through toObject() and drop the fields tied to the source network (xpubkey + its
+    // checksum) so they are recomputed for the target network. Mirrors the client's
+    // convertXPubKeyToNetwork so the derived copayer IDs match on both sides.
+    const obj = lib.HDPublicKey(xPubKey).toObject();
+    obj.network = ['testnet', 'regtest'].includes(network) ? network : 'livenet';
+    delete obj.xpubkey;
+    delete obj.checksum;
+    return new BitcoreLib.HDPublicKey(obj).toString();
   }
 };

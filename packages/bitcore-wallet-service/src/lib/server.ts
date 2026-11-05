@@ -1299,11 +1299,18 @@ export class WalletService implements IWalletService {
           // A sibling wallet on another network (e.g. livenet -> testnet) has an xPubKey serialized for that network,
           // but the keygen session's copayer IDs were derived from the xPubKey serialized for the session's network.
           const idChain = opts.tssKeygenChain || opts.chain;
-          const copayerIds = new Set([
-            Copayer.xPubToCopayerId(idChain, opts.xPubKey), // this is probably a duplicate of one of the next two entries, but just in case.
-            Copayer.xPubToCopayerId(idChain, Utils.convertXPubKeyForNetwork(opts.xPubKey, idChain, 'livenet')),
-            Copayer.xPubToCopayerId(idChain, Utils.convertXPubKeyForNetwork(opts.xPubKey, idChain, 'testnet'))
-          ]);
+          let copayerIds: Set<string>;
+          try {
+            copayerIds = new Set([
+              Copayer.xPubToCopayerId(idChain, opts.xPubKey), // this is probably a duplicate of one of the next two entries, but just in case.
+              Copayer.xPubToCopayerId(idChain, Utils.convertXPubKeyForNetwork(opts.xPubKey, idChain, 'livenet')),
+              Copayer.xPubToCopayerId(idChain, Utils.convertXPubKeyForNetwork(opts.xPubKey, idChain, 'testnet'))
+            ]);
+          } catch (e) {
+            // Never let a bad key take the whole process down with an unhandled rejection — this
+            // handler is async and passed to a callback-style API, so a throw here would otherwise exit BWS.
+            return cb(new ClientError('Invalid extended public key'));
+          }
 
           if (!keySession?.participants.some(id => copayerIds.has(id))) {
             return cb(Errors.TSS_NON_PARTICIPANT);

@@ -3,12 +3,33 @@
 import * as chai from 'chai';
 import 'chai/register-should';
 import sinon from 'sinon';
+import { BitcoreLib } from '@bitpay-labs/crypto-wallet-core';
 import { Utils } from '../src/lib/common/utils';
 import { logger } from '../src/lib/logger';
 
 const should = chai.should();
 
 describe('Utils', function() {
+  describe('#convertXPubKeyForNetwork', function() {
+    const xpub = BitcoreLib.HDPrivateKey.fromSeed(Buffer.alloc(32, 7))
+      .deriveChild('m/44/0/0').hdPublicKey.toString();
+
+    it('re-serializes an xpub for another network without crashing or altering the key', function() {
+      const tpub = Utils.convertXPubKeyForNetwork(xpub, 'btc', 'testnet');
+      tpub.should.match(/^tpub/);
+
+      const from = new BitcoreLib.HDPublicKey(xpub).toObject();
+      const to = new BitcoreLib.HDPublicKey(tpub).toObject();
+      ['depth', 'parentFingerPrint', 'childIndex', 'chainCode', 'publicKey'].forEach(k => {
+        String(to[k]).should.equal(String(from[k]));
+      });
+
+      // round-trips to the original and is stable within the testnet/regtest family
+      Utils.convertXPubKeyForNetwork(tpub, 'btc', 'livenet').should.equal(xpub);
+      Utils.convertXPubKeyForNetwork(tpub, 'btc', 'regtest').should.equal(tpub);
+    });
+  });
+
   describe('#getMissingFields', function() {
     it('should check required fields', function() {
       const obj = {
